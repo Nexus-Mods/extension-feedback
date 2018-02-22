@@ -7,7 +7,7 @@ import * as update from 'immutability-helper';
 import * as os from 'os';
 import * as path from 'path';
 import * as React from 'react';
-import { Col, ControlLabel, DropdownButton, FormGroup, Grid,
+import { Alert, Col, ControlLabel, DropdownButton, FormGroup, Grid,
   ListGroup, ListGroupItem, MenuItem, Panel, Row,
 } from 'react-bootstrap';
 import { Trans, translate } from 'react-i18next';
@@ -26,6 +26,7 @@ interface IConnectedProps {
   feedbackMessage: string;
   feedbackFiles: { [fileId: string]: IFeedbackFile };
   APIKey: string;
+  newestVersion: string;
 }
 
 interface IActionProps {
@@ -82,8 +83,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { feedbackFiles, t } = this.props;
+    const { t, feedbackFiles, newestVersion } = this.props;
 
+    const outdated = newestVersion !== remote.app.getVersion();
     const T: any = Trans;
     const PanelX: any = Panel;
     return (
@@ -91,6 +93,12 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         <FlexLayout type='column'>
           <FlexLayout.Fixed>
             <h2>{t('Provide Feedback')}</h2>
+            {outdated ? (
+              <Alert bsStyle='warning'>
+                {t('You are not running the newest version of Vortex. '
+                 + 'Please verify your issue hasn\'t been fixed already.')}
+              </Alert>
+             ) : null}
             <h4>
               {t('Describe in detail what you were doing and the feedback ' +
                   'you would like to submit.')}
@@ -428,6 +436,7 @@ function mapStateToProps(state: any): IConnectedProps {
     feedbackMessage: state.session.feedback.feedbackMessage,
     feedbackFiles: state.session.feedback.feedbackFiles,
     APIKey: state.confidential.account.nexus.APIKey,
+    newestVersion: state.session.nexus.newestVersion,
   };
 }
 
