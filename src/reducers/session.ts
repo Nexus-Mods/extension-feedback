@@ -10,6 +10,8 @@ export const sessionReducer: types.IReducerSpec = {
   reducers: {
     [actions.setFeedbackMessage as any]: (state, payload) =>
       util.setSafe(state, ['feedbackMessage'], payload),
+    [actions.setFeedbackHash as any]: (state, payload) =>
+      util.setSafe(state, ['feedbackHash'], payload),
     [actions.addFeedbackFile as any]: (state, payload) => {
       const { feedbackFile } = payload;
       return util.setSafe(state, ['feedbackFiles', feedbackFile.filename], feedbackFile);
@@ -23,6 +25,7 @@ export const sessionReducer: types.IReducerSpec = {
   },
   defaults: {
     feedbackMessage: '',
+    feedbackHash: undefined,
     feedbackFiles: {},
   },
 };

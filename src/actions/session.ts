@@ -5,6 +5,9 @@ import { createAction } from 'redux-act';
 export const setFeedbackMessage = createAction('SET_FEEDBACK_MESSAGE',
   (feedbackMessage: string) => feedbackMessage);
 
+export const setFeedbackHash = createAction('SET_FEEDBACK_HASH',
+  (hash: string) => hash);
+
 export const addFeedbackFile = createAction('ADD_FEEDBACK_FILE',
   (feedbackFile: IFeedbackFile) => ({ feedbackFile }));
 

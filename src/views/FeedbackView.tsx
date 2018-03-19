@@ -24,6 +24,7 @@ type ControlMode = 'urls' | 'files';
 
 interface IConnectedProps {
   feedbackMessage: string;
+  feedbackHash: string;
   feedbackFiles: { [fileId: string]: IFeedbackFile };
   APIKey: string;
   newestVersion: string;
@@ -357,7 +358,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private submitFeedback = (event) => {
-    const { APIKey, feedbackFiles, onClearFeedbackFiles, onDismissNotification,
+    const { APIKey, feedbackFiles, feedbackHash, onClearFeedbackFiles, onDismissNotification,
             onShowActivity, onShowError } = this.props;
     const { anonymous, feedbackMessage } = this.state;
     const app = appIn || remote.app;
@@ -375,7 +376,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const sendAnonymously = anonymous || (APIKey === undefined);
 
     this.context.api.events.emit('submit-feedback',
-                                 feedbackMessage, files, sendAnonymously, (err: Error) => {
+                                 feedbackMessage, feedbackHash, files,
+                                 sendAnonymously, (err: Error) => {
       this.nextState.sending = false;
       if (err !== null) {
         if ((err as any).body !== undefined) {
@@ -434,6 +436,7 @@ function mapDispatchToProps(dispatch: Redux.Dispatch<any>): IActionProps {
 function mapStateToProps(state: any): IConnectedProps {
   return {
     feedbackMessage: state.session.feedback.feedbackMessage,
+    feedbackHash: state.session.feedback.feedbackHash,
     feedbackFiles: state.session.feedback.feedbackFiles,
     APIKey: state.confidential.account.nexus.APIKey,
     newestVersion: state.session.nexus.newestVersion,

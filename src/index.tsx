@@ -1,4 +1,4 @@
-import { addFeedbackFile, setFeedbackMessage } from './actions/session';
+import { addFeedbackFile, setFeedbackHash, setFeedbackMessage } from './actions/session';
 import { sessionReducer } from './reducers/session';
 import { IFeedbackFile } from './types/IFeedbackFile';
 
@@ -84,9 +84,11 @@ function init(context: types.IExtensionContext) {
   context.once(() => {
     context.api.setStylesheet('feedback', path.join(__dirname, 'feedback.scss'));
 
-    context.api.events.on('report-feedback', (text: string, files: IFeedbackFile[]) => {
+    context.api.events.on('report-feedback', (text: string, files: IFeedbackFile[],
+                                              hash?: string) => {
       context.api.events.emit('show-main-page', 'Feedback');
       context.api.store.dispatch(setFeedbackMessage(text));
+      context.api.store.dispatch(setFeedbackHash(hash));
       (files || []).forEach(file => {
         context.api.store.dispatch(addFeedbackFile(file));
       });
