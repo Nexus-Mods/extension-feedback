@@ -57,7 +57,10 @@ function nativeCrashCheck(context: types.IExtensionContext): Promise<void> {
               title: 'Dismiss',
               action: dismiss => {
                 Promise.map(crashDumps,
-                            dump => fs.removeAsync(dump).then(() => fs.removeAsync(dump + '.log')))
+                            dump => fs.removeAsync(dump)
+                              .catch(err => undefined)
+                              .then(() => fs.removeAsync(dump + '.log'))
+                              .catch(err => undefined))
                   .then(() => {
                     log('info', 'crash dumps dismissed');
                     dismiss();
