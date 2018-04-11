@@ -25,7 +25,7 @@ function nativeCrashCheck(context: types.IExtensionContext): Promise<void> {
         context.api.sendNotification({
           type: 'error',
           title: 'Exception!',
-          message: 'The last session of Vortex logged an exception (You probably noticed...)',
+          message: 'The last session of Vortex logged an exception (you probably noticed...)',
           noDismiss: true,
           actions: [
             {

@@ -54,7 +54,7 @@ const SAMPLE_REPORT = 'E.g.:\n' +
   'Summary: The mod downloads properly but when I try to install it nothing happens.\n' +
   'Expected Results: The mod is installed.\n' +
   'Actual Results: Nothing happens.\n' +
-  'Steps to reproduce: Download a mod, then click Install inside the Actions menu.';
+  'Steps to Reproduce: Download a mod, then click Install inside the Actions menu.';
 
 class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   private feedbackActions: ITableRowAction[];
