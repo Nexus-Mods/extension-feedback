@@ -108,6 +108,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
               Please<br/>
               <ul>
                 <li>use punctuation and linebreaks,</li>
+                <li>use english,</li>
                 <li>be precise and to the point. You don't have to form sentences.
                   A bug report is a technical document, not prose,</li>
                 <li>report only one issue per message,</li>
