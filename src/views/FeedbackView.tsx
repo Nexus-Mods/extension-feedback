@@ -117,6 +117,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
                 <li>include an example of how to reproduce the error if you can.
                   Even if its a general problem ("fomods using feature x zig when they should
                   zag") include one sequence of actions that expose the problem.</li>
+                <li>please provide your feedback in the English language</li>
               </ul>
               Trying to reproduce a bug is usually what takes the most amount of time in
               bug fixing and the less time we spend on it, the more time we can spend
