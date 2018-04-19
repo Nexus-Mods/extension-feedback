@@ -3,21 +3,20 @@ import { IFeedbackFile } from '../types/IFeedbackFile';
 
 import * as Promise from 'bluebird';
 import { app as appIn, remote } from 'electron';
-import * as update from 'immutability-helper';
 import * as os from 'os';
 import * as path from 'path';
 import * as React from 'react';
-import { Alert, Col, ControlLabel, DropdownButton, FormGroup, Grid,
-  ListGroup, ListGroupItem, MenuItem, Panel, Row,
+import { Alert, DropdownButton,
+  ListGroup, ListGroupItem, MenuItem, Panel,
 } from 'react-bootstrap';
 import { Trans, translate } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import {} from 'redux-thunk';
-import { dir as tmpDir, file as tmpFile } from 'tmp';
+import { file as tmpFile } from 'tmp';
 import {
-  actions, ComponentEx, Dropzone, FlexLayout, fs, Icon, IconBar, ITableRowAction,
-  log, MainPage, Table, Toggle, tooltip, types, util,
+  actions, ComponentEx, Dropzone, FlexLayout, fs, ITableRowAction,
+  MainPage, Toggle, tooltip, types, util,
 } from 'vortex-api';
 
 type ControlMode = 'urls' | 'files';
