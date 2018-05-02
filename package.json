@@ -18,11 +18,11 @@
     "@types/redux-thunk": "2.1.0",
     "@types/tmp": "^0.0.33",
     "copyfiles": "^1.2.0",
-    "vortex-api": "Nexus-Mods/vortex-api",
-    "react-bootstrap": "^0.30.6",
+    "react-bootstrap": "^0.32.1",
     "tmp": "^0.0.31",
-    "webpack": "^3.5.5",
-    "ts-loader": "2.3.4"
+    "ts-loader": "2.3.4",
+    "vortex-api": "Nexus-Mods/vortex-api",
+    "webpack": "^3.5.5"
   },
   "dependencies": {
     "redux": "3.7.2"
