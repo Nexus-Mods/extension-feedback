@@ -426,7 +426,7 @@ function mapDispatchToProps(dispatch: Redux.Dispatch<any>): IActionProps {
       dispatch(actions.showDialog(type, title, content, dialogActions)),
     onShowError: (message: string, details?: string | Error,
                   notificationId?: string, allowReport?: boolean) =>
-      util.showError(dispatch, message, details, false, notificationId, allowReport),
+      util.showError(dispatch, message, details, { id: notificationId, allowReport }),
     onDismissNotification: (id: string) => dispatch(actions.dismissNotification(id)),
     onClearFeedbackFiles: () => dispatch(clearFeedbackFiles()),
     onAddFeedbackFile: (feedbackFile) => dispatch(addFeedbackFile(feedbackFile)),
