@@ -2,7 +2,7 @@ import { addFeedbackFile, clearFeedbackFiles, removeFeedbackFile } from '../acti
 import { IFeedbackFile } from '../types/IFeedbackFile';
 
 import * as Promise from 'bluebird';
-import { app as appIn, remote } from 'electron';
+import { remote } from 'electron';
 import * as os from 'os';
 import * as path from 'path';
 import * as React from 'react';
@@ -15,13 +15,14 @@ import * as Redux from 'redux';
 import {} from 'redux-thunk';
 import { file as tmpFile } from 'tmp';
 import {
-  actions, ComponentEx, Dropzone, FlexLayout, fs, ITableRowAction,
+  actions, ComponentEx, Dropzone, FlexLayout, FormInput, fs,
   MainPage, Toggle, tooltip, types, util,
 } from 'vortex-api';
 
 type ControlMode = 'urls' | 'files';
 
 interface IConnectedProps {
+  feedbackTitle: string;
   feedbackMessage: string;
   feedbackHash: string;
   feedbackFiles: { [fileId: string]: IFeedbackFile };
@@ -44,6 +45,7 @@ interface IActionProps {
 type IProps = IConnectedProps & IActionProps;
 
 interface IComponentState {
+  feedbackTitle: string;
   feedbackMessage: string;
   anonymous: boolean;
   sending: boolean;
@@ -56,24 +58,15 @@ const SAMPLE_REPORT = 'E.g.:\n' +
   'Steps to reproduce: Download a mod, then click Install inside the Actions menu.';
 
 class FeedbackPage extends ComponentEx<IProps, IComponentState> {
-  private feedbackActions: ITableRowAction[];
-
   constructor(props: IProps) {
     super(props);
 
     this.initState({
+      feedbackTitle: props.feedbackTitle,
       feedbackMessage: props.feedbackMessage,
       anonymous: false,
       sending: false,
     });
-
-    this.feedbackActions = [
-      {
-        icon: 'delete',
-        title: this.props.t('Delete'),
-        action: this.remove,
-      },
-    ];
   }
 
   public componentWillReceiveProps(newProps: IProps) {
@@ -127,9 +120,15 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             <PanelX.Body>
               <FlexLayout type='column'>
                 <FlexLayout.Fixed>
+                  {t('Title')}
+                </FlexLayout.Fixed>
+                <FlexLayout.Fixed>
+                  {this.renderTitleInput()}
+                </FlexLayout.Fixed>
+                <FlexLayout.Fixed>
                   {t('Your Message')}
                 </FlexLayout.Fixed>
-                <FlexLayout.Flex fill>
+                <FlexLayout.Flex>
                   {this.renderMessageArea()}
                 </FlexLayout.Flex>
                 <FlexLayout.Fixed>
@@ -161,7 +160,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private renderFeedbackFile = (feedbackFile: string) => {
-    const { t, feedbackFiles, onRemoveFeedbackFile } = this.props;
+    const { t, feedbackFiles } = this.props;
     return (
       <ListGroupItem
         key={feedbackFiles[feedbackFile].filename}
@@ -201,8 +200,6 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private dropFeedback = (type: ControlMode, feedbackFilePaths: string[]) => {
-    const { onAddFeedbackFile } = this.props;
-
     if (feedbackFilePaths.length === 0) {
       return;
     }
@@ -218,6 +215,20 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const { onRemoveFeedbackFile } = this.props;
     const feedbackFileId = evt.currentTarget.id;
     onRemoveFeedbackFile(feedbackFileId);
+  }
+
+  private renderTitleInput = () => {
+    const { t } = this.props;
+    const { feedbackTitle } = this.state;
+    return (
+      <FormInput
+        id='feedback-input'
+        label={t('Title')}
+        value={feedbackTitle}
+        onChange={this.handleChangeTitle}
+        placeholder={t('Please provide a title')}
+      />
+    );
   }
 
   private renderMessageArea = () => {
@@ -252,7 +263,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private renderFilesArea(): JSX.Element {
-    const { t, APIKey, feedbackFiles } = this.props;
+    const { t, APIKey } = this.props;
     const { anonymous, sending } = this.state;
     return (
       <FlexLayout fill={false} type='row' className='feedback-controls'>
@@ -331,7 +342,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   private attachState(stateKey: string, name: string) {
     const { t, onAddFeedbackFile } = this.props;
     const data: Buffer = Buffer.from(JSON.stringify(this.context.api.store.getState()[stateKey]));
-    const filePath = tmpFile({
+    tmpFile({
       prefix: `${stateKey}-`,
       postfix: '.json',
     }, (err, tmpPath: string, fd: number, cleanup: () => void) => {
@@ -349,8 +360,6 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private attachLog() {
-    const { onAddFeedbackFile } = this.props;
-
     this.attachFile(
       path.join(remote.app.getPath('userData'), 'vortex.log'), 'log');
     this.attachFile(
@@ -358,10 +367,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private submitFeedback = (event) => {
-    const { APIKey, feedbackFiles, feedbackHash, onClearFeedbackFiles, onDismissNotification,
-            onShowActivity, onShowError } = this.props;
+    const { APIKey, feedbackTitle, feedbackFiles, feedbackHash, onClearFeedbackFiles,
+            onDismissNotification, onShowActivity, onShowError } = this.props;
     const { anonymous, feedbackMessage } = this.state;
-    const app = appIn || remote.app;
 
     const notificationId = 'submit-feedback';
     onShowActivity('Submitting feedback', notificationId);
@@ -376,7 +384,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const sendAnonymously = anonymous || (APIKey === undefined);
 
     this.context.api.events.emit('submit-feedback',
-                                 feedbackMessage, feedbackHash, files,
+                                 feedbackTitle, feedbackMessage, feedbackHash, files,
                                  sendAnonymously, (err: Error) => {
       this.nextState.sending = false;
       if (err !== null) {
@@ -411,6 +419,10 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     });
   }
 
+  private handleChangeTitle = (event) => {
+    this.nextState.feedbackTitle = event.currentTarget.value;
+  }
+
   private handleChange = (event) => {
     this.nextState.feedbackMessage = event.currentTarget.value;
   }
@@ -435,6 +447,7 @@ function mapDispatchToProps(dispatch: Redux.Dispatch<any>): IActionProps {
 
 function mapStateToProps(state: any): IConnectedProps {
   return {
+    feedbackTitle: state.session.feedback.feedbackTitle,
     feedbackMessage: state.session.feedback.feedbackMessage,
     feedbackHash: state.session.feedback.feedbackHash,
     feedbackFiles: state.session.feedback.feedbackFiles,

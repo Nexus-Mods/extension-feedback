@@ -1,4 +1,5 @@
-import { addFeedbackFile, setFeedbackHash, setFeedbackMessage } from './actions/session';
+import { addFeedbackFile, setFeedbackHash, setFeedbackMessage,
+         setFeedbackTitle } from './actions/session';
 import { sessionReducer } from './reducers/session';
 import { IFeedbackFile } from './types/IFeedbackFile';
 
@@ -7,7 +8,7 @@ import FeedbackView from './views/FeedbackView';
 import * as Promise from 'bluebird';
 import { remote } from 'electron';
 import * as path from 'path';
-import { fs, log, selectors, tooltip, types, util } from 'vortex-api';
+import { fs, log, types } from 'vortex-api';
 
 function findCrashDumps() {
   const nativeCrashesPath = path.join(remote.app.getPath('userData'), 'temp', 'dumps');
@@ -87,9 +88,10 @@ function init(context: types.IExtensionContext) {
   context.once(() => {
     context.api.setStylesheet('feedback', path.join(__dirname, 'feedback.scss'));
 
-    context.api.events.on('report-feedback', (text: string, files: IFeedbackFile[],
+    context.api.events.on('report-feedback', (title: string, text: string, files: IFeedbackFile[],
                                               hash?: string) => {
       context.api.events.emit('show-main-page', 'Feedback');
+      context.api.store.dispatch(setFeedbackTitle(title));
       context.api.store.dispatch(setFeedbackMessage(text));
       context.api.store.dispatch(setFeedbackHash(hash));
       (files || []).forEach(file => {

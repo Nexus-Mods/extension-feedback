@@ -2,6 +2,9 @@ import { IFeedbackFile } from '../types/IFeedbackFile';
 
 import { createAction } from 'redux-act';
 
+export const setFeedbackTitle = createAction('SET_FEEDBACK_TITLE',
+  (feedbackTitle: string) => feedbackTitle);
+
 export const setFeedbackMessage = createAction('SET_FEEDBACK_MESSAGE',
   (feedbackMessage: string) => feedbackMessage);
 
