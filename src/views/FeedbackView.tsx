@@ -258,6 +258,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         <MenuItem eventKey='log'>{t('Vortex Log')}</MenuItem>
         <MenuItem eventKey='settings'>{t('Application Settings')}</MenuItem>
         <MenuItem eventKey='state'>{t('Application State')}</MenuItem>
+        <MenuItem eventKey='actions'>{t('Recent State Changes')}</MenuItem>
       </DropdownButton>
     );
   }
@@ -300,6 +301,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     switch (eventKey) {
       case 'sysinfo': this.addSystemInfo(); break;
       case 'log': this.attachLog(); break;
+      case 'actions': this.attachActions('Action History'); break;
       case 'settings': {
         onShowDialog('question', t('Confirm'), {
           message: t('This will attach your Vortex setting to the report, not including ' +
@@ -340,7 +342,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private attachState(stateKey: string, name: string) {
-    const { t, onAddFeedbackFile } = this.props;
+    const { onAddFeedbackFile } = this.props;
     const data: Buffer = Buffer.from(JSON.stringify(this.context.api.store.getState()[stateKey]));
     tmpFile({
       prefix: `${stateKey}-`,
@@ -359,6 +361,29 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     });
   }
 
+  private attachActions(name: string) {
+    const { onAddFeedbackFile } = this.props;
+    tmpFile({
+      prefix: 'events-',
+      postfix: '.json',
+    }, (err, tmpPath: string, fd: number, cleanup: () => void) => {
+      (util as any).getReduxLog()
+        .then(log => {
+          const data = Buffer.from(JSON.stringify(log, undefined, 2));
+          fs.writeAsync(fd, data, 0, data.byteLength, 0)
+            .then(() => fs.closeAsync(fd))
+            .then(() => {
+              onAddFeedbackFile({
+                filename: name,
+                filePath: tmpPath,
+                size: data.byteLength,
+                type: 'State',
+              });
+            });
+        });
+    });
+  }
+
   private attachLog() {
     this.attachFile(
       path.join(remote.app.getPath('userData'), 'vortex.log'), 'log');
@@ -367,9 +392,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private submitFeedback = (event) => {
-    const { APIKey, feedbackTitle, feedbackFiles, feedbackHash, onClearFeedbackFiles,
+    const { APIKey, feedbackFiles, feedbackHash, onClearFeedbackFiles,
             onDismissNotification, onShowActivity, onShowError } = this.props;
-    const { anonymous, feedbackMessage } = this.state;
+    const { anonymous, feedbackTitle, feedbackMessage } = this.state;
 
     const notificationId = 'submit-feedback';
     onShowActivity('Submitting feedback', notificationId);
@@ -396,6 +421,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         return;
       }
 
+      this.nextState.feedbackTitle = '';
       this.nextState.feedbackMessage = '';
 
       let removeFiles: string[];
@@ -419,8 +445,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     });
   }
 
-  private handleChangeTitle = (event) => {
-    this.nextState.feedbackTitle = event.currentTarget.value;
+  private handleChangeTitle = (newTitle: string) => {
+    this.nextState.feedbackTitle = newTitle;
   }
 
   private handleChange = (event) => {
