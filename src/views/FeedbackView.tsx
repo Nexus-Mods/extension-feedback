@@ -3,6 +3,7 @@ import { IFeedbackFile } from '../types/IFeedbackFile';
 
 import * as Promise from 'bluebird';
 import { remote } from 'electron';
+import { ParameterInvalid } from 'nexus-api';
 import * as os from 'os';
 import * as path from 'path';
 import * as React from 'react';
@@ -58,6 +59,7 @@ const SAMPLE_REPORT = 'E.g.:\n' +
   'Steps to reproduce: Download a mod, then click Install inside the Actions menu.';
 
 class FeedbackPage extends ComponentEx<IProps, IComponentState> {
+  private static MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024;
   constructor(props: IProps) {
     super(props);
 
@@ -184,10 +186,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private attachFile(filePath: string, type?: string): Promise<void> {
-    const { onAddFeedbackFile } = this.props;
     return fs.statAsync(filePath)
       .then(stats => {
-        onAddFeedbackFile({
+        this.addFeedbackFile({
           filename: path.basename(filePath),
           filePath,
           size: stats.size,
@@ -265,7 +266,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
   private renderFilesArea(): JSX.Element {
     const { t, APIKey } = this.props;
-    const { anonymous, sending } = this.state;
+    const { anonymous, feedbackMessage, sending } = this.state;
     return (
       <FlexLayout fill={false} type='row' className='feedback-controls'>
         <FlexLayout.Fixed>
@@ -283,7 +284,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             id='btn-submit-feedback'
             tooltip={t('Submit Feedback')}
             onClick={this.submitFeedback}
-            disabled={sending}
+            disabled={sending || !feedbackMessage}
           >
             {t('Submit Feedback')}
           </tooltip.Button>
@@ -342,7 +343,6 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private attachState(stateKey: string, name: string) {
-    const { onAddFeedbackFile } = this.props;
     const data: Buffer = Buffer.from(JSON.stringify(this.context.api.store.getState()[stateKey]));
     tmpFile({
       prefix: `${stateKey}-`,
@@ -351,7 +351,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       fs.writeAsync(fd, data, 0, data.byteLength, 0)
         .then(() => fs.closeAsync(fd))
         .then(() => {
-          onAddFeedbackFile({
+          this.addFeedbackFile({
             filename: name,
             filePath: tmpPath,
             size: data.byteLength,
@@ -362,7 +362,6 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private attachActions(name: string) {
-    const { onAddFeedbackFile } = this.props;
     tmpFile({
       prefix: 'events-',
       postfix: '.json',
@@ -373,7 +372,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           fs.writeAsync(fd, data, 0, data.byteLength, 0)
             .then(() => fs.closeAsync(fd))
             .then(() => {
-              onAddFeedbackFile({
+              this.addFeedbackFile({
                 filename: name,
                 filePath: tmpPath,
                 size: data.byteLength,
@@ -391,9 +390,22 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       path.join(remote.app.getPath('userData'), 'vortex1.log'), 'log');
   }
 
+  private addFeedbackFile(file: IFeedbackFile) {
+    const { onAddFeedbackFile, onShowDialog, feedbackFiles } = this.props;
+    const size = Object.keys(feedbackFiles).reduce((prev, key) =>
+      prev + feedbackFiles[key].size, 0);
+    if (size + file.size > FeedbackPage.MAX_ATTACHMENT_SIZE) {
+      onShowDialog('error', 'Attachment too big', {
+        text: 'Sorry, the combined file size must not exceed 20MB',
+      }, [{ label: 'Ok' }]);
+    } else {
+      onAddFeedbackFile(file);
+    }
+  }
+
   private submitFeedback = (event) => {
     const { APIKey, feedbackFiles, feedbackHash, onClearFeedbackFiles,
-            onDismissNotification, onShowActivity, onShowError } = this.props;
+            onDismissNotification, onShowActivity, onShowDialog, onShowError } = this.props;
     const { anonymous, feedbackTitle, feedbackMessage } = this.state;
 
     const notificationId = 'submit-feedback';
@@ -413,12 +425,20 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
                                  sendAnonymously, (err: Error) => {
       this.nextState.sending = false;
       if (err !== null) {
-        if ((err as any).body !== undefined) {
+        if (err.name === 'ParameterInvalid') {
+          onShowError('Failed to send feedback', err.message, notificationId, false);
+        } else if ((err as any).body !== undefined) {
           onShowError('Failed to send feedback', `${err.message} - ${(err as any).body}`,
                       notificationId, false);
+        } else {
+          onShowError('Failed to send feedback', err, notificationId, false);
         }
-        onShowError('Failed to send feedback', err, notificationId, false);
         return;
+      } else {
+        onShowDialog('success', 'Feedback sent', {
+          text: 'Thank you for your feedback!\n\n'
+              + 'Your feedback will be reviewed before it gets published',
+        }, [ { label: 'Close' } ]);
       }
 
       this.nextState.feedbackTitle = '';
