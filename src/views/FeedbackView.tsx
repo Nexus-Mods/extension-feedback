@@ -498,7 +498,7 @@ function mapStateToProps(state: any): IConnectedProps {
     feedbackHash: state.session.feedback.feedbackHash,
     feedbackFiles: state.session.feedback.feedbackFiles,
     APIKey: state.confidential.account.nexus.APIKey,
-    newestVersion: state.session.nexus.newestVersion,
+    newestVersion: state.persistent.nexus.newestVersion,
   };
 }
 
