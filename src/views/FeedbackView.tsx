@@ -14,6 +14,7 @@ import { Trans, translate } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import {} from 'redux-thunk';
+import * as semver from 'semver';
 import { file as tmpFile } from 'tmp';
 import {
   actions, ComponentEx, Dropzone, FlexLayout, FormInput, fs,
@@ -80,14 +81,16 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   public render(): JSX.Element {
     const { t, feedbackFiles, newestVersion } = this.props;
 
-    const outdated = newestVersion !== remote.app.getVersion();
+    const ver = remote.app.getVersion();
+
+    const outdated = semver.lt(ver, newestVersion);
     const T: any = Trans;
     const PanelX: any = Panel;
     return (
       <MainPage>
         <FlexLayout type='column'>
           <FlexLayout.Fixed>
-            <h2>{t('Provide Feedback')}</h2>
+            <h2>{t('Provide Feedback (Bug reports and suggestions welcome)')}</h2>
             {outdated ? (
               <Alert bsStyle='warning'>
                 {t('You are not running the newest version of Vortex. '
@@ -105,7 +108,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
                 <li>use english,</li>
                 <li>be precise and to the point. You don't have to form sentences.
                   A bug report is a technical document, not prose,</li>
-                <li>report only one issue per message,</li>
+                <li>report only one thing per message,</li>
                 <li>avoid making assumptions or your own conclusions, just report what you saw
                   and what you expected to see,</li>
                 <li>include an example of how to reproduce the error if you can.
