@@ -68,3 +68,15 @@
     width: 33%;
   }
 }
+
+.feedback-form {
+  overflow-y: auto;
+}
+
+.feedback-file-drop-flex-outer {
+  max-height: 100px;
+
+  .dropzone {
+    height: calc(100% - 20px) !important;
+  }
+}

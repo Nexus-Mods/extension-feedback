@@ -123,7 +123,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           <FlexLayout.Flex>
           <Panel>
             <PanelX.Body>
-              <FlexLayout type='column'>
+              <FlexLayout type='column' className='feedback-form'>
                 <FlexLayout.Fixed>
                   {t('Title')}
                 </FlexLayout.Fixed>
@@ -136,7 +136,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
                 <FlexLayout.Flex>
                   {this.renderMessageArea()}
                 </FlexLayout.Flex>
-                <FlexLayout.Fixed>
+                <FlexLayout.Flex className='feedback-file-drop-flex'>
                   <Dropzone
                     accept={['files']}
                     icon='folder-download'
@@ -145,7 +145,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
                     clickText='Click to browse for files to attach'
                     dialogHint={t('Select file to attach')}
                   />
-                </FlexLayout.Fixed>
+                </FlexLayout.Flex>
                 <FlexLayout.Fixed>
                   {t('or')}{this.renderAttachButton()}
                 </FlexLayout.Fixed>
