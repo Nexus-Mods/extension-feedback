@@ -340,7 +340,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const sysInfo: string[] = [
       'Vortex Version: ' + remote.app.getVersion(),
       'Memory: ' + util.bytesToString((process as any).getSystemMemoryInfo().total * 1024),
-      'System: ' + `${os.platform()} (${os.release()})`,
+      'System: ' + `${os.platform()} ${process.arch} (${os.release()})`,
     ];
     this.nextState.feedbackMessage = sysInfo.join('\n') + '\n' + this.state.feedbackMessage;
   }
