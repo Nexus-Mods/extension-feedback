@@ -1,6 +1,5 @@
 import * as actions from '../actions/session';
 
-import * as update from 'immutability-helper';
 import { types, util } from 'vortex-api';
 
 /**
@@ -23,7 +22,7 @@ export const sessionReducer: types.IReducerSpec = {
       return util.deleteOrNop(state, ['feedbackFiles', feedbackFileId]);
     },
     [actions.clearFeedbackFiles as any]: (state, payload) =>
-      update(state, { feedbackFiles: { $set: {} } }),
+      util.setSafe(state, ['feedbackFiles'], {}),
   },
   defaults: {
     feedbackTitle: '',
