@@ -3,11 +3,10 @@ import { IFeedbackFile } from '../types/IFeedbackFile';
 
 import * as Promise from 'bluebird';
 import { remote } from 'electron';
-import { ParameterInvalid } from 'nexus-api';
 import * as os from 'os';
 import * as path from 'path';
 import * as React from 'react';
-import { Alert, DropdownButton,
+import { DropdownButton,
   ListGroup, ListGroupItem, MenuItem, Panel,
 } from 'react-bootstrap';
 import { Trans, translate } from 'react-i18next';
@@ -17,7 +16,7 @@ import {} from 'redux-thunk';
 import * as semver from 'semver';
 import { file as tmpFile } from 'tmp';
 import {
-  actions, ComponentEx, Dropzone, FlexLayout, FormInput, fs,
+  actions, ComponentEx, Dropzone, EmptyPlaceholder, FlexLayout, FormInput, fs,
   MainPage, Toggle, tooltip, types, util,
 } from 'vortex-api';
 
@@ -79,89 +78,106 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   public render(): JSX.Element {
-    const { t, feedbackFiles, newestVersion } = this.props;
+    const content = (this.context.api as any).isOutdated()
+      ? this.renderOutdated()
+      : this.renderContent();
 
-    const ver = remote.app.getVersion();
-
-    const outdated = semver.lt(ver, newestVersion);
-    const T: any = Trans;
-    const PanelX: any = Panel;
     return (
       <MainPage>
         <FlexLayout type='column'>
-          <FlexLayout.Fixed>
-            <h2>{t('Provide Feedback (Bug reports and suggestions welcome)')}</h2>
-            {outdated ? (
-              <Alert bsStyle='warning'>
-                {t('You are not running the newest version of Vortex. '
-                 + 'Please verify your issue hasn\'t been fixed already.')}
-              </Alert>
-             ) : null}
-            <h4>
-              {t('Describe in detail what you were doing and the feedback ' +
-                  'you would like to submit.')}
-            </h4>
-            <T i18nKey='feedback-instructions' className='feedback-instructions'>
-              Please<br/>
-              <ul>
-                <li>use punctuation and linebreaks,</li>
-                <li>use english,</li>
-                <li>be precise and to the point. You don't have to form sentences.
-                  A bug report is a technical document, not prose,</li>
-                <li>report only one thing per message,</li>
-                <li>avoid making assumptions or your own conclusions, just report what you saw
-                  and what you expected to see,</li>
-                <li>include an example of how to reproduce the error if you can.
-                  Even if its a general problem ("fomods using feature x zig when they should
-                  zag") include one sequence of actions that expose the problem.</li>
-              </ul>
-              Trying to reproduce a bug is usually what takes the most amount of time in
-              bug fixing and the less time we spend on it, the more time we can spend
-              creating great new features!
-            </T>
-          </FlexLayout.Fixed>
-          <FlexLayout.Flex>
-          <Panel>
-            <PanelX.Body>
-              <FlexLayout type='column' className='feedback-form'>
-                <FlexLayout.Fixed>
-                  {t('Title')}
-                </FlexLayout.Fixed>
-                <FlexLayout.Fixed>
-                  {this.renderTitleInput()}
-                </FlexLayout.Fixed>
-                <FlexLayout.Fixed>
-                  {t('Your Message')}
-                </FlexLayout.Fixed>
-                <FlexLayout.Flex>
-                  {this.renderMessageArea()}
-                </FlexLayout.Flex>
-                <FlexLayout.Flex className='feedback-file-drop-flex'>
-                  <Dropzone
-                    accept={['files']}
-                    icon='folder-download'
-                    drop={this.dropFeedback}
-                    dropText='Drop files to attach'
-                    clickText='Click to browse for files to attach'
-                    dialogHint={t('Select file to attach')}
-                  />
-                </FlexLayout.Flex>
-                <FlexLayout.Fixed>
-                  {t('or')}{this.renderAttachButton()}
-                </FlexLayout.Fixed>
-                <FlexLayout.Fixed>
-                  <ListGroup className='feedback-files'>
-                    {Object.keys(feedbackFiles).map(this.renderFeedbackFile)}
-                  </ListGroup>
-                  {this.renderFilesArea()}
-                </FlexLayout.Fixed>
-              </FlexLayout>
-            </PanelX.Body>
-          </Panel>
-          </FlexLayout.Flex>
+          {content}
         </FlexLayout>
       </MainPage>
     );
+  }
+
+  private renderOutdated() {
+    const { t } = this.props;
+    return (
+      <FlexLayout.Flex fill>
+        <h2>{t('Provide Feedback (Bug reports and suggestions welcome)')}</h2>
+        <EmptyPlaceholder
+          icon='auto-update'
+          text={t('Vortex outdated')}
+          fill={true}
+          subtext={t('Sorry, due to large amount of feedback we receive we can\'t accept feedback from '
+                   + 'older versions since the issue may already have been addressed.')}
+        />
+      </FlexLayout.Flex>
+    );
+  }
+
+  private renderContent() {
+    const { t, feedbackFiles } = this.props;
+
+    const T: any = Trans;
+    const PanelX: any = Panel;
+    return [
+      <FlexLayout.Fixed>
+        <h4>
+          {t('Describe in detail what you were doing and the feedback ' +
+            'you would like to submit.')}
+        </h4>
+        <T i18nKey='feedback-instructions' className='feedback-instructions'>
+          Please<br />
+          <ul>
+            <li>use punctuation and linebreaks,</li>
+            <li>use english,</li>
+            <li>be precise and to the point. You don't have to form sentences.
+                  A bug report is a technical document, not prose,</li>
+            <li>report only one thing per message,</li>
+            <li>avoid making assumptions or your own conclusions, just report what you saw
+                  and what you expected to see,</li>
+            <li>include an example of how to reproduce the error if you can.
+              Even if its a general problem ("fomods using feature x zig when they should
+                  zag") include one sequence of actions that expose the problem.</li>
+          </ul>
+          Trying to reproduce a bug is usually what takes the most amount of time in
+          bug fixing and the less time we spend on it, the more time we can spend
+          creating great new features!
+            </T>
+      </FlexLayout.Fixed>
+      ,
+      <FlexLayout.Flex>
+        <Panel>
+          <PanelX.Body>
+            <FlexLayout type='column' className='feedback-form'>
+              <FlexLayout.Fixed>
+                {t('Title')}
+              </FlexLayout.Fixed>
+              <FlexLayout.Fixed>
+                {this.renderTitleInput()}
+              </FlexLayout.Fixed>
+              <FlexLayout.Fixed>
+                {t('Your Message')}
+              </FlexLayout.Fixed>
+              <FlexLayout.Flex>
+                {this.renderMessageArea()}
+              </FlexLayout.Flex>
+              <FlexLayout.Flex className='feedback-file-drop-flex'>
+                <Dropzone
+                  accept={['files']}
+                  icon='folder-download'
+                  drop={this.dropFeedback}
+                  dropText='Drop files to attach'
+                  clickText='Click to browse for files to attach'
+                  dialogHint={t('Select file to attach')}
+                />
+              </FlexLayout.Flex>
+              <FlexLayout.Fixed>
+                {t('or')}{this.renderAttachButton()}
+              </FlexLayout.Fixed>
+              <FlexLayout.Fixed>
+                <ListGroup className='feedback-files'>
+                  {Object.keys(feedbackFiles).map(this.renderFeedbackFile)}
+                </ListGroup>
+                {this.renderFilesArea()}
+              </FlexLayout.Fixed>
+            </FlexLayout>
+          </PanelX.Body>
+        </Panel>
+      </FlexLayout.Flex>
+    ];
   }
 
   private renderFeedbackFile = (feedbackFile: string) => {

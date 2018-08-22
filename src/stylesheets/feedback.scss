@@ -80,3 +80,9 @@
     height: calc(100% - 20px) !important;
   }
 }
+
+.feedback-outdated {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
