@@ -13,7 +13,6 @@ import { Trans, translate } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import {} from 'redux-thunk';
-import * as semver from 'semver';
 import { file as tmpFile } from 'tmp';
 import {
   actions, ComponentEx, Dropzone, EmptyPlaceholder, FlexLayout, FormInput, fs,
@@ -113,7 +112,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const T: any = Trans;
     const PanelX: any = Panel;
     return [
-      <FlexLayout.Fixed>
+      <FlexLayout.Fixed key='feedback-instructions'>
         <h4>
           {t('Describe in detail what you were doing and the feedback ' +
             'you would like to submit.')}
@@ -138,7 +137,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             </T>
       </FlexLayout.Fixed>
       ,
-      <FlexLayout.Flex>
+      <FlexLayout.Flex key='feedback-body'>
         <Panel>
           <PanelX.Body>
             <FlexLayout type='column' className='feedback-form'>
