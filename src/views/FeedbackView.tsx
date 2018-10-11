@@ -295,6 +295,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           >
             {t('Send anonymously')}
           </Toggle>
+          {t('Please note: if you send feedback anonymously we can not give you updates on your report or enquire for more details.')}
         </FlexLayout.Fixed>
         <FlexLayout.Fixed>
           <tooltip.Button
