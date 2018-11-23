@@ -33,21 +33,31 @@ function nativeCrashCheck(context: types.IExtensionContext): Promise<void> {
               title: 'Send Report',
               action: dismiss => {
                 return Promise.map(crashDumps,
-                  dump => fs.statAsync(dump).then(stats => ({ filePath: dump, stats })))
+                  dump => fs.statAsync(dump)
+                            .then(stats => ({ filePath: dump, stats }))
+                            // This shouldn't happen unless the user deleted the
+                            //  crashdump before hitting the Send Report button.
+                            //  Either way the application shouldn't crash; keep going.
+                            .catch(err => err.code === 'ENOENT' ? undefined : Promise.reject(err)))
                   .each((iter: { filePath: string, stats: fs.Stats }) => {
-                    context.api.store.dispatch(addFeedbackFile({
-                      filename: path.basename(iter.filePath),
-                      filePath: iter.filePath,
-                      size: iter.stats.size,
-                      type: 'Dump',
-                    }));
-                    context.api.store.dispatch(addFeedbackFile({
-                      filename: path.basename(iter.filePath) + '.log',
-                      filePath: iter.filePath + '.log',
-                      size: iter.stats.size,
-                      type: 'Dump',
-                    }));
+                    if (iter !== undefined) {
+                      context.api.store.dispatch(addFeedbackFile({
+                        filename: path.basename(iter.filePath),
+                        filePath: iter.filePath,
+                        size: iter.stats.size,
+                        type: 'Dump',
+                      }));
+                      context.api.store.dispatch(addFeedbackFile({
+                        filename: path.basename(iter.filePath) + '.log',
+                        filePath: iter.filePath + '.log',
+                        size: iter.stats.size,
+                        type: 'Dump',
+                      }));
+                    }
                   })
+                  // Do we actually want to report an issue with the native
+                  //  crash dumps at this point? Or should we just keep going ?
+                  .catch(err => undefined)
                   .then(() => {
                     context.api.events.emit('show-main-page', 'Feedback');
                     dismiss();
