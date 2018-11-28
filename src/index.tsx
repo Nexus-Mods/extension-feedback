@@ -19,69 +19,131 @@ function findCrashDumps() {
     .map((iterPath: string) => path.join(nativeCrashesPath, iterPath));
 }
 
-function nativeCrashCheck(context: types.IExtensionContext): Promise<void> {
+enum ErrorType {
+  CLR,
+  OOM,
+}
+
+const KNOWN_ERRORS = {
+  'e0434f4d': ErrorType.CLR,
+  'e0000008': ErrorType.OOM,
+}
+
+function errorText(type: ErrorType): string {
+  switch(type) {
+    case ErrorType.CLR: return 'The exception you got indicates that the installation of the .Net Framework '
+      + 'installed on your system is invalid. This should be easily solved by reinstalling it.'; 
+    case ErrorType.OOM: return 'The exception you got indicates an out of memory situation. This can have different '
+      + 'reasons, most commonly a system misconfiguration where it doesn\'t provide enough virtual memory for stable '
+      + 'operation.';
+  }
+}
+
+function recognisedError(crashDumps: string[]): Promise<ErrorType> {
+  return Promise.map(crashDumps, dumpPath =>
+    fs.readFileAsync(dumpPath + '.log', { encoding: 'utf-8' })
+    .then(data => {
+      try {
+        const codeLine = data.split('\r\n').filter(line => line.startsWith('Exception code'));
+        return Promise.resolve(codeLine.map(line => line.split(': ')[1]));
+      } catch (err) {
+        return Promise.reject(new Error('Failed to parse'));
+      }
+    })
+    .catch(() => null)
+  )
+  .filter(codes => !!codes)
+  .reduce((prev, codes) => prev.concat(codes), [])
+  .filter(code => KNOWN_ERRORS[code] !== undefined)
+  .then(codes => codes.length > 0 ? KNOWN_ERRORS[codes[0]] : undefined);
+}
+
+function reportKnownError(api: types.IExtensionApi, dismiss: () => void, errType: ErrorType) {
+  const bbcode = errorText(errType)
+    + '<br/><br/>Please visit '
+    + '[url="https://forums.nexusmods.com/index.php?/topic/7151166-whitescreen-reasons/"]this thread[/url] '
+    + 'for more in-depth information.'
+  return api.showDialog('info', 'Exception occurred', {
+    bbcode,
+  }, [
+    { label: 'Close' }
+  ]);
+}
+
+function nativeCrashCheck(api: types.IExtensionApi): Promise<void> {
   return findCrashDumps()
-    .then(crashDumps => {
-      if (crashDumps.length > 0) {
-        context.api.sendNotification({
-          type: 'error',
-          title: 'Exception!',
-          message: 'The last session of Vortex logged an exception (You probably noticed...)',
-          noDismiss: true,
-          actions: [
-            {
-              title: 'Send Report',
-              action: dismiss => {
-                return Promise.map(crashDumps,
-                  dump => fs.statAsync(dump)
-                            .then(stats => ({ filePath: dump, stats }))
-                            // This shouldn't happen unless the user deleted the
-                            //  crashdump before hitting the Send Report button.
-                            //  Either way the application shouldn't crash; keep going.
-                            .catch(err => err.code === 'ENOENT' ? undefined : Promise.reject(err)))
-                  .each((iter: { filePath: string, stats: fs.Stats }) => {
-                    if (iter !== undefined) {
-                      context.api.store.dispatch(addFeedbackFile({
-                        filename: path.basename(iter.filePath),
-                        filePath: iter.filePath,
-                        size: iter.stats.size,
-                        type: 'Dump',
-                      }));
-                      context.api.store.dispatch(addFeedbackFile({
-                        filename: path.basename(iter.filePath) + '.log',
-                        filePath: iter.filePath + '.log',
-                        size: iter.stats.size,
-                        type: 'Dump',
-                      }));
-                    }
-                  })
-                  // Do we actually want to report an issue with the native
-                  //  crash dumps at this point? Or should we just keep going ?
-                  .catch(err => undefined)
-                  .then(() => {
-                    context.api.events.emit('show-main-page', 'Feedback');
-                    dismiss();
-                  });
-              },
-            },
+    .then(crashDumps => (crashDumps.length === 0)
+      ? Promise.resolve()
+      : recognisedError(crashDumps)
+        .then(knownError => {
+          const actions = [
             {
               title: 'Dismiss',
               action: dismiss => {
                 Promise.map(crashDumps,
-                            dump => fs.removeAsync(dump)
-                              .catch(err => undefined)
-                              .then(() => fs.removeAsync(dump + '.log'))
-                              .catch(err => undefined))
+                  dump => fs.removeAsync(dump)
+                    .catch(() => undefined)
+                    .then(() => fs.removeAsync(dump + '.log'))
+                    .catch(() => undefined))
                   .then(() => {
                     log('info', 'crash dumps dismissed');
                     dismiss();
                   });
               },
             },
-          ],
-        });
-      }
-    });
+          ];
+
+          if (knownError === undefined) {
+            actions.splice(0, 0, {
+                title: 'Send Report',
+                action: dismiss => {
+                  return Promise.map(crashDumps,
+                    dump => fs.statAsync(dump)
+                      .then(stats => ({ filePath: dump, stats }))
+                      // This shouldn't happen unless the user deleted the
+                      //  crashdump before hitting the Send Report button.
+                      //  Either way the application shouldn't crash; keep going.
+                      .catch(err => err.code === 'ENOENT' ? undefined : Promise.reject(err)))
+                    .each((iter: { filePath: string, stats: fs.Stats }) => {
+                      if (iter !== undefined) {
+                        api.store.dispatch(addFeedbackFile({
+                          filename: path.basename(iter.filePath),
+                          filePath: iter.filePath,
+                          size: iter.stats.size,
+                          type: 'Dump',
+                        }));
+                        api.store.dispatch(addFeedbackFile({
+                          filename: path.basename(iter.filePath) + '.log',
+                          filePath: iter.filePath + '.log',
+                          size: iter.stats.size,
+                          type: 'Dump',
+                        }));
+                      }
+                    })
+                    // Do we actually want to report an issue with the native
+                    //  crash dumps at this point? Or should we just keep going ?
+                    .catch(err => undefined)
+                    .then(() => {
+                      api.events.emit('show-main-page', 'Feedback');
+                      dismiss();
+                    });
+                },
+              });
+          } else {
+            actions.splice(0, 0, {
+              title: 'More',
+              action: dismiss => reportKnownError(api, dismiss, knownError),
+            });
+          }
+
+          api.sendNotification({
+            type: 'error',
+            title: 'Exception!',
+            message: 'The last session of Vortex logged an exception (You probably noticed...)',
+            noDismiss: true,
+            actions,
+          });
+        }));
 }
 
 function init(context: types.IExtensionContext) {
@@ -126,7 +188,7 @@ function init(context: types.IExtensionContext) {
         context.api.events.emit('show-main-page', 'Feedback');
       });
 
-    nativeCrashCheck(context);
+    nativeCrashCheck(context.api);
   });
 
   return true;
