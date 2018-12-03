@@ -1,5 +1,6 @@
 import { addFeedbackFile, setFeedbackHash, setFeedbackMessage,
-         setFeedbackTitle } from './actions/session';
+         setFeedbackTitle, 
+         setFeedbackType} from './actions/session';
 import { sessionReducer } from './reducers/session';
 import { IFeedbackFile } from './types/IFeedbackFile';
 
@@ -70,6 +71,40 @@ function reportKnownError(api: types.IExtensionApi, dismiss: () => void, errType
   ]);
 }
 
+function sendCrashFeedback(api: types.IExtensionApi, dismiss: () => void, crashDumps: string[]) {
+  return Promise.map(crashDumps,
+    dump => fs.statAsync(dump)
+      .then(stats => ({ filePath: dump, stats }))
+      // This shouldn't happen unless the user deleted the
+      //  crashdump before hitting the Send Report button.
+      //  Either way the application shouldn't crash; keep going.
+      .catch(err => err.code === 'ENOENT' ? undefined : Promise.reject(err)))
+    .each((iter: { filePath: string, stats: fs.Stats }) => {
+      api.store.dispatch(setFeedbackType('bugreport', 'crash'));
+      if (iter !== undefined) {
+        api.store.dispatch(addFeedbackFile({
+          filename: path.basename(iter.filePath),
+          filePath: iter.filePath,
+          size: iter.stats.size,
+          type: 'Dump',
+        }));
+        api.store.dispatch(addFeedbackFile({
+          filename: path.basename(iter.filePath) + '.log',
+          filePath: iter.filePath + '.log',
+          size: iter.stats.size,
+          type: 'Dump',
+        }));
+      }
+    })
+    // Do we actually want to report an issue with the native
+    //  crash dumps at this point? Or should we just keep going ?
+    .catch(err => undefined)
+    .then(() => {
+      api.events.emit('show-main-page', 'Feedback');
+      dismiss();
+    });
+}
+
 function nativeCrashCheck(api: types.IExtensionApi): Promise<void> {
   return findCrashDumps()
     .then(crashDumps => (crashDumps.length === 0)
@@ -95,38 +130,24 @@ function nativeCrashCheck(api: types.IExtensionApi): Promise<void> {
 
           if (knownError === undefined) {
             actions.splice(0, 0, {
-                title: 'Send Report',
+                title: 'More',
                 action: dismiss => {
-                  return Promise.map(crashDumps,
-                    dump => fs.statAsync(dump)
-                      .then(stats => ({ filePath: dump, stats }))
-                      // This shouldn't happen unless the user deleted the
-                      //  crashdump before hitting the Send Report button.
-                      //  Either way the application shouldn't crash; keep going.
-                      .catch(err => err.code === 'ENOENT' ? undefined : Promise.reject(err)))
-                    .each((iter: { filePath: string, stats: fs.Stats }) => {
-                      if (iter !== undefined) {
-                        api.store.dispatch(addFeedbackFile({
-                          filename: path.basename(iter.filePath),
-                          filePath: iter.filePath,
-                          size: iter.stats.size,
-                          type: 'Dump',
-                        }));
-                        api.store.dispatch(addFeedbackFile({
-                          filename: path.basename(iter.filePath) + '.log',
-                          filePath: iter.filePath + '.log',
-                          size: iter.stats.size,
-                          type: 'Dump',
-                        }));
+                  const bbcode = 'The last session of Vortex logged an exception.'
+                    + '<br/><br/>Please visit '
+                    + '[url="https://forums.nexusmods.com/index.php?/topic/7151166-whitescreen-reasons/"]this thread[/url] '
+                    + 'for typical reasons causing this.<br/>'
+                    + '[color="red"]Please report this issue only if you\'re sure none of those reasons apply to you![/color]'
+
+                  return api.showDialog('error', 'Exception', {
+                    bbcode,
+                  }, [
+                    {
+                      label: 'Report', action: () => {
+                        sendCrashFeedback(api, dismiss, crashDumps);
                       }
-                    })
-                    // Do we actually want to report an issue with the native
-                    //  crash dumps at this point? Or should we just keep going ?
-                    .catch(err => undefined)
-                    .then(() => {
-                      api.events.emit('show-main-page', 'Feedback');
-                      dismiss();
-                    });
+                    },
+                    { label: 'Close' },
+                  ])
                 },
               });
           } else {
@@ -138,8 +159,8 @@ function nativeCrashCheck(api: types.IExtensionApi): Promise<void> {
 
           api.sendNotification({
             type: 'error',
-            title: 'Exception!',
-            message: 'The last session of Vortex logged an exception (You probably noticed...)',
+            title: 'Exception',
+            message: 'Last Vortex session crashed',
             noDismiss: true,
             actions,
           });
@@ -163,6 +184,7 @@ function init(context: types.IExtensionContext) {
     context.api.events.on('report-feedback', (title: string, text: string, files: IFeedbackFile[],
                                               hash?: string) => {
       context.api.events.emit('show-main-page', 'Feedback');
+      context.api.store.dispatch(setFeedbackType('bugreport', 'other'));
       context.api.store.dispatch(setFeedbackTitle(title));
       context.api.store.dispatch(setFeedbackMessage(text));
       context.api.store.dispatch(setFeedbackHash(hash));

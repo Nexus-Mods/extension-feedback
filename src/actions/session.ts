@@ -1,6 +1,10 @@
 import { IFeedbackFile } from '../types/IFeedbackFile';
+import { FeedbackTopic, FeedbackType } from '../types/feedbackTypes';
 
 import { createAction } from 'redux-act';
+
+export const setFeedbackType = createAction('SET_FEEDBACK_TYPE',
+  (feedbackType: FeedbackType, feedbackTopic: FeedbackTopic) => ({ feedbackType, feedbackTopic }));
 
 export const setFeedbackTitle = createAction('SET_FEEDBACK_TITLE',
   (feedbackTitle: string) => feedbackTitle);

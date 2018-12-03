@@ -1,5 +1,6 @@
 import { addFeedbackFile, clearFeedbackFiles, removeFeedbackFile } from '../actions/session';
 import { IFeedbackFile } from '../types/IFeedbackFile';
+import { FeedbackType, FeedbackTopic } from '../types/feedbackTypes';
 
 import * as Promise from 'bluebird';
 import { remote } from 'electron';
@@ -7,7 +8,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as React from 'react';
 import { DropdownButton,
-  ListGroup, ListGroupItem, MenuItem, Panel,
+  ListGroup, ListGroupItem, MenuItem, Panel, FormGroup, ControlLabel, FormControl, Alert,
 } from 'react-bootstrap';
 import { Trans, translate } from 'react-i18next';
 import { connect } from 'react-redux';
@@ -22,6 +23,8 @@ import {
 type ControlMode = 'urls' | 'files';
 
 interface IConnectedProps {
+  feedbackType: FeedbackType;
+  feedbackTopic: FeedbackTopic;
   feedbackTitle: string;
   feedbackMessage: string;
   feedbackHash: string;
@@ -45,6 +48,8 @@ interface IActionProps {
 type IProps = IConnectedProps & IActionProps;
 
 interface IComponentState {
+  feedbackType: FeedbackType;
+  feedbackTopic: FeedbackTopic;
   feedbackTitle: string;
   feedbackMessage: string;
   anonymous: boolean;
@@ -59,10 +64,14 @@ const SAMPLE_REPORT = 'E.g.:\n' +
 
 class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   private static MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024;
+  private static MIN_TITLE_LENGTH = 10;
+  private static MIN_TEXT_LENGTH = 50;
   constructor(props: IProps) {
     super(props);
 
     this.initState({
+      feedbackType: props.feedbackType,
+      feedbackTopic: props.feedbackTopic,
       feedbackTitle: props.feedbackTitle,
       feedbackMessage: props.feedbackMessage,
       anonymous: false,
@@ -71,12 +80,19 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   public componentWillReceiveProps(newProps: IProps) {
+    if (this.props.feedbackType !== newProps.feedbackType) {
+      this.nextState.feedbackType = newProps.feedbackType;
+    }
+    if (this.props.feedbackTopic !== newProps.feedbackTopic) {
+      this.nextState.feedbackTopic = newProps.feedbackTopic;
+    }
     if (this.props.feedbackMessage !== newProps.feedbackMessage) {
       this.nextState.feedbackMessage = newProps.feedbackMessage;
     }
   }
 
   public render(): JSX.Element {
+    const { t } = this.props;
     const content = (this.context.api as any).isOutdated()
       ? this.renderOutdated()
       : this.renderContent();
@@ -84,17 +100,43 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     return (
       <MainPage>
         <FlexLayout type='column'>
+          <DropdownButton
+            id='feedback-type-dropdown'
+            title={t(this.renderType(this.state.feedbackType))}
+            onSelect={this.handleChangeType}
+          >
+            <MenuItem eventKey='bugreport'>{t(this.renderType('bugreport'))}</MenuItem>
+            <MenuItem eventKey='suggestion'>{t(this.renderType('suggestion'))}</MenuItem>
+            <MenuItem eventKey='question'>{t(this.renderType('question'))}</MenuItem>
+          </DropdownButton>
           {content}
         </FlexLayout>
       </MainPage>
     );
   }
 
+  private renderType(type: FeedbackType): string {
+    return {
+      bugreport: 'Bug Report',
+      suggestion: 'Suggestion',
+      question: 'Question',
+    }[type] || 'Select Report Type';
+  }
+
+  private renderTopic(feedbackTopic: FeedbackTopic): string {
+    return {
+      crash: 'Crash',
+      login_problems: 'Login Problem',
+      slow_downloads: 'Slow Downloads',
+      other: 'Other',
+    }[feedbackTopic] || 'Unknown';
+  }
+
   private renderOutdated() {
     const { t } = this.props;
     return (
       <FlexLayout.Flex fill>
-        <h2>{t('Provide Feedback (Bug reports and suggestions welcome)')}</h2>
+        <h2>{t('Provide Feedback')}</h2>
         <EmptyPlaceholder
           icon='auto-update'
           text={t('Vortex outdated')}
@@ -107,7 +149,168 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private renderContent() {
+    const { feedbackType } = this.state;
+    const renderFunc = {
+      bugreport: this.renderContentBugReport,
+      suggestion: this.renderContentSuggestion,
+      question: this.renderContentQuestion,
+    }[feedbackType] || this.renderNoType;
+    return renderFunc();
+  }
+
+  private renderNoType = () => {
+    const { t } = this.props;
+
+    return (
+      <div className='feedback-instructions-notype'>
+        {t('Please select the type of Feedback you\'d like to send in.')}
+      </div>
+    );
+  }
+
+  private renderContentQuestion = () => {
+    const T: any = Trans;
+
+    return (
+      <T i18nKey='feedback-instructions-question' className='feedback-instructions-notype'>
+        <p>
+          Sorry but this is not the right way to ask for help with Vortex.
+          The feedback system is intended to inform us about problems or possible improvement
+          and we can only reply to ask for further information.
+          To get help, please consult the knowledge base or visit the forum at
+        </p>
+        <a onClick={this.openSupportForum}>
+          https://forums.nexusmods.com/index.php?/forum/4306-vortex-support/
+        </a>
+        <p>
+          There the entire community can help you.
+        </p>
+      </T>
+    );
+  }
+
+  private renderContentSuggestion = () => {
     const { t, feedbackFiles } = this.props;
+
+    const titleValid = this.validateTitle();
+    const messageValid = this.validateMessage();
+
+    const T: any = Trans;
+    const PanelX: any = Panel;
+    return [
+      <FlexLayout.Fixed key='feedback-instructions'>
+        <h4>
+          {t('Describe in detail what you want to suggest.')}
+        </h4>
+        <T i18nKey='feedback-instructions' className='feedback-instructions'>
+          Please<br />
+          <ul>
+            <li>check on <a onClick={this.openIssues}>https://github.com/Nexus-Mods/Vortex/issues</a> if your suggestion
+            was already made and vote on existing reports instead of creating new ones. This helps us identify the most popular requests.</li>
+            <li>use punctuation and linebreaks,</li>
+            <li>use english,</li>
+            <li>be precise and to the point. Describe as concisely the feature you'd like,
+              any form of illustration - if applicable - will help</li>
+            <li>report only one thing per message,</li>
+          </ul>
+        </T>
+      </FlexLayout.Fixed>
+      ,
+      <FlexLayout.Flex key='feedback-body'>
+        <Panel>
+          <PanelX.Body>
+            <FlexLayout type='column' className='feedback-form'>
+              <FlexLayout.Fixed>
+                <h4>{t('Title')}</h4>
+              </FlexLayout.Fixed>
+              <FlexLayout.Fixed>
+                {this.renderTitleInput(titleValid)}
+              </FlexLayout.Fixed>
+              <FlexLayout.Fixed>
+                <h4>{t('System Information')}</h4>
+              </FlexLayout.Fixed>
+              <FlexLayout.Fixed>
+                <div className='feedback-system-info'>{this.systemInfo()}</div>
+              </FlexLayout.Fixed>
+              <FlexLayout.Fixed>
+                <h4>{t('Your Message')}</h4>
+              </FlexLayout.Fixed>
+              <FlexLayout.Flex>
+                {this.renderMessageArea(messageValid)}
+              </FlexLayout.Flex>
+              <FlexLayout.Flex className='feedback-file-drop-flex'>
+                <Dropzone
+                  accept={['files']}
+                  icon='folder-download'
+                  drop={this.dropFeedback}
+                  dropText='Drop files to attach'
+                  clickText='Click to browse for files to attach'
+                  dialogHint={t('Select file to attach')}
+                />
+              </FlexLayout.Flex>
+              <FlexLayout.Fixed>
+                {t('or')}{this.renderAttachButton()}
+              </FlexLayout.Fixed>
+              <FlexLayout.Fixed>
+                <ListGroup className='feedback-files'>
+                  {Object.keys(feedbackFiles).map(this.renderFeedbackFile)}
+                </ListGroup>
+                {this.renderFilesArea((titleValid === undefined) && (messageValid === undefined))}
+              </FlexLayout.Fixed>
+            </FlexLayout>
+          </PanelX.Body>
+        </Panel>
+      </FlexLayout.Flex>
+    ];
+  }
+
+  private renderContentBugReport = () => {
+    const { t, feedbackFiles } = this.props;
+    const { feedbackTopic } = this.state;
+
+    const titleValid = this.validateTitle();
+    const messageValid = this.validateMessage();
+
+    const fields = [
+      <FlexLayout.Fixed key='title-label'>
+        <h4>{t('Title')}</h4>
+      </FlexLayout.Fixed>,
+      <FlexLayout.Fixed key='title-input'>
+        {this.renderTitleInput(titleValid)}
+      </FlexLayout.Fixed>,
+      <FlexLayout.Fixed key='sysinfo-label'>
+        <h4>{t('System Information')}</h4>
+      </FlexLayout.Fixed>,
+      <FlexLayout.Fixed key='sysinfo-data'>
+        <div className='feedback-system-info'>{this.systemInfo()}</div>
+      </FlexLayout.Fixed>,
+      <FlexLayout.Fixed key='message-label'>
+        <h4>{t('Your Message')}</h4>
+      </FlexLayout.Fixed>,
+      <FlexLayout.Flex key='message-input'>
+        {this.renderMessageArea(messageValid)}
+      </FlexLayout.Flex>,
+      <FlexLayout.Flex className='feedback-file-drop-flex' key='files-dropzone'>
+        <Dropzone
+          accept={['files']}
+          icon='folder-download'
+          drop={this.dropFeedback}
+          dropText='Drop files to attach'
+          clickText='Click to browse for files to attach'
+          dialogHint={t('Select file to attach')}
+        />
+      </FlexLayout.Flex>,
+      <FlexLayout.Fixed key='attach-button'>
+        {t('or')}{this.renderAttachButton()}
+      </FlexLayout.Fixed>,
+      <FlexLayout.Fixed key='files-list'>
+        <ListGroup className='feedback-files'>
+          {Object.keys(feedbackFiles).map(this.renderFeedbackFile)}
+        </ListGroup>
+        {this.renderFilesArea((titleValid === undefined) && (messageValid === undefined))}
+      </FlexLayout.Fixed>
+    ];
+
 
     const T: any = Trans;
     const PanelX: any = Panel;
@@ -142,41 +345,60 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           <PanelX.Body>
             <FlexLayout type='column' className='feedback-form'>
               <FlexLayout.Fixed>
-                {t('Title')}
+                <h4>{t('Topic')}</h4>
               </FlexLayout.Fixed>
               <FlexLayout.Fixed>
-                {this.renderTitleInput()}
+                <FlexLayout type='row'>
+                  <FlexLayout.Fixed>
+                    <DropdownButton
+                      id='feedback-topic-dropdown'
+                      title={t(this.renderTopic(feedbackTopic))}
+                      onSelect={this.handleChangeTopic}
+                    >
+                      <MenuItem eventKey='crash'>{t(this.renderTopic('crash'))}</MenuItem>
+                      <MenuItem eventKey='login_problems'>{t(this.renderTopic('login_problems'))}</MenuItem>
+                      <MenuItem eventKey='slow_downloads'>{t(this.renderTopic('slow_downloads'))}</MenuItem>
+                      <MenuItem eventKey='other'>{t(this.renderTopic('other'))}</MenuItem>
+                    </DropdownButton>
+                  </FlexLayout.Fixed>
+                  <FlexLayout.Flex>
+                    {this.renderTopicComment()}
+                    {feedbackTopic === undefined ? <div>{t('Please select a topic')}</div> : null}
+                  </FlexLayout.Flex>
+                </FlexLayout>
               </FlexLayout.Fixed>
-              <FlexLayout.Fixed>
-                {t('Your Message')}
-              </FlexLayout.Fixed>
-              <FlexLayout.Flex>
-                {this.renderMessageArea()}
-              </FlexLayout.Flex>
-              <FlexLayout.Flex className='feedback-file-drop-flex'>
-                <Dropzone
-                  accept={['files']}
-                  icon='folder-download'
-                  drop={this.dropFeedback}
-                  dropText='Drop files to attach'
-                  clickText='Click to browse for files to attach'
-                  dialogHint={t('Select file to attach')}
-                />
-              </FlexLayout.Flex>
-              <FlexLayout.Fixed>
-                {t('or')}{this.renderAttachButton()}
-              </FlexLayout.Fixed>
-              <FlexLayout.Fixed>
-                <ListGroup className='feedback-files'>
-                  {Object.keys(feedbackFiles).map(this.renderFeedbackFile)}
-                </ListGroup>
-                {this.renderFilesArea()}
-              </FlexLayout.Fixed>
+              {feedbackTopic !== undefined ? fields : null}
             </FlexLayout>
           </PanelX.Body>
         </Panel>
       </FlexLayout.Flex>
     ];
+  }
+
+  private renderTopicComment() {
+    const { t } = this.props;
+    const { feedbackTopic } = this.state;
+
+    if (feedbackTopic === 'slow_downloads') {
+      return (
+        <Alert bsStyle='warning'>
+          <div>
+            {t('Vortex does not impose any speed limitations on downlooads, that\'s handled by the server.')}
+          </div>
+          <div>
+            {t('We can not forward your problems to the web department so please don\'t report temporary speed issues '
+              + 'or problems regarding the non-premium speed cap through this form!')}
+          </div>
+        </Alert>
+      );
+    } else if (feedbackTopic === 'login_problems') {
+      return (
+        <Alert bsStyle='warning'>
+          {t('Please make sure you\'ve read the login instructions in Vortex, on the authorisation page and consulted the '
+           + 'knowledge base before reporting login issues.')}
+        </Alert>
+      );
+    }
   }
 
   private renderFeedbackFile = (feedbackFile: string) => {
@@ -201,6 +423,38 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         />
       </ListGroupItem>
     );
+  }
+
+  private openIssues = () => {
+    util.opn('https://github.com/Nexus-Mods/Vortex/issues').catch(() => null);
+  }
+
+  private openSupportForum = () => {
+    util.opn('https://forums.nexusmods.com/index.php?/forum/4306-vortex-support').catch(() => null);
+  }
+
+  private validateTitle(): string {
+    const { t } = this.props;
+    const { feedbackTitle } = this.state;
+
+    if ((feedbackTitle.length > 0) && (feedbackTitle.length < FeedbackPage.MIN_TITLE_LENGTH)) {
+      return t('The title needs to be at least {{minLength}} characters',
+               { replace: { minLength: FeedbackPage.MIN_TITLE_LENGTH } });
+    }
+
+    return undefined;
+  }
+
+  private validateMessage(): string {
+    const { t } = this.props;
+    const { feedbackMessage } = this.state;
+
+    if ((feedbackMessage.length > 0) && (feedbackMessage.length < FeedbackPage.MIN_TEXT_LENGTH)) {
+      return t('Please provide a meaningful description of at least {{minLength}} characters',
+              { replace: { minLength: FeedbackPage.MIN_TEXT_LENGTH } });
+    }
+
+    return undefined;
   }
 
   private attachFile(filePath: string, type?: string): Promise<void> {
@@ -236,31 +490,51 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     onRemoveFeedbackFile(feedbackFileId);
   }
 
-  private renderTitleInput = () => {
+  private renderTitleInput = (validationMessage: string) => {
     const { t } = this.props;
     const { feedbackTitle } = this.state;
     return (
-      <FormInput
-        id='feedback-input'
-        label={t('Title')}
-        value={feedbackTitle}
-        onChange={this.handleChangeTitle}
-        placeholder={t('Please provide a title')}
-      />
+      <FormGroup validationState={validationMessage !== undefined ? 'error' : null}>
+        <FormInput
+          id='feedback-input'
+          label={t('Title')}
+          value={feedbackTitle}
+          onChange={this.handleChangeTitle}
+          placeholder={t('Please provide a title')}
+        />
+        {(this.validateMessage === undefined) ? null : (
+          <ControlLabel>
+            {t(validationMessage)}
+          </ControlLabel>
+        )}
+      </FormGroup>
     );
   }
 
-  private renderMessageArea = () => {
+  private renderMessageArea = (validationMessage: string) => {
     const { t } = this.props;
     const { feedbackMessage } = this.state;
     return (
-      <textarea
-        value={feedbackMessage || ''}
-        id='textarea-feedback'
-        className='textarea-feedback'
-        onChange={this.handleChange}
-        placeholder={t(SAMPLE_REPORT)}
-      />
+      <FormGroup validationState={validationMessage !== undefined ? 'error' : null} style={{ height: '100%' }}>
+        <FlexLayout type='column'>
+          <FlexLayout.Flex>
+            <FormControl componentClass='textarea'
+              value={feedbackMessage || ''}
+              id='textarea-feedback'
+              className='textarea-feedback'
+              onChange={this.handleChange}
+              placeholder={t(SAMPLE_REPORT)}
+            />
+          </FlexLayout.Flex>
+          {(validationMessage === undefined) ? null : (
+            <FlexLayout.Fixed>
+              <ControlLabel>
+                {t(validationMessage)}
+              </ControlLabel>
+            </FlexLayout.Fixed>
+          )}
+        </FlexLayout>
+      </FormGroup>
     );
   }
 
@@ -273,7 +547,6 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         onSelect={this.attach}
         dropup
       >
-        <MenuItem eventKey='sysinfo'>{t('System Information')}</MenuItem>
         <MenuItem eventKey='log'>{t('Vortex Log')}</MenuItem>
         <MenuItem eventKey='settings'>{t('Application Settings')}</MenuItem>
         <MenuItem eventKey='state'>{t('Application State')}</MenuItem>
@@ -282,9 +555,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     );
   }
 
-  private renderFilesArea(): JSX.Element {
+  private renderFilesArea(valid: boolean): JSX.Element {
     const { t, APIKey } = this.props;
-    const { anonymous, feedbackMessage, sending } = this.state;
+    const { anonymous, feedbackTitle, feedbackMessage, sending } = this.state;
     return (
       <FlexLayout fill={false} type='row' className='feedback-controls'>
         <FlexLayout.Fixed>
@@ -295,7 +568,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           >
             {t('Send anonymously')}
           </Toggle>
-          {t('Please note: if you send feedback anonymously we can not give you updates on your report or enquire for more details.')}
+          {t('If you send feedback anonymously we can not give you updates on your report or enquire for more details.')}
         </FlexLayout.Fixed>
         <FlexLayout.Fixed>
           <tooltip.Button
@@ -303,7 +576,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             id='btn-submit-feedback'
             tooltip={t('Submit Feedback')}
             onClick={this.submitFeedback}
-            disabled={sending || !feedbackMessage}
+            disabled={sending || feedbackTitle.length === 0 || feedbackMessage.length === 0 || !valid}
           >
             {t('Submit Feedback')}
           </tooltip.Button>
@@ -319,7 +592,6 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   private attach = (eventKey: any) => {
     const { t, onShowDialog } = this.props;
     switch (eventKey) {
-      case 'sysinfo': this.addSystemInfo(); break;
       case 'log': this.attachLog(); break;
       case 'actions': this.attachActions('Action History'); break;
       case 'settings': {
@@ -352,13 +624,12 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     }
   }
 
-  private addSystemInfo() {
-    const sysInfo: string[] = [
+  private systemInfo() {
+    return [
       'Vortex Version: ' + remote.app.getVersion(),
       'Memory: ' + util.bytesToString((process as any).getSystemMemoryInfo().total * 1024),
       'System: ' + `${os.platform()} ${process.arch} (${os.release()})`,
-    ];
-    this.nextState.feedbackMessage = sysInfo.join('\n') + '\n' + this.state.feedbackMessage;
+    ].join('\n');
   }
 
   private attachState(stateKey: string, name: string) {
@@ -425,7 +696,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   private submitFeedback = (event) => {
     const { APIKey, feedbackFiles, feedbackHash, onClearFeedbackFiles,
             onDismissNotification, onShowActivity, onShowDialog, onShowError } = this.props;
-    const { anonymous, feedbackTitle, feedbackMessage } = this.state;
+    const { anonymous, feedbackType, feedbackTopic, feedbackTitle, feedbackMessage } = this.state;
 
     const notificationId = 'submit-feedback';
     onShowActivity('Submitting feedback', notificationId);
@@ -438,10 +709,18 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     });
 
     const sendAnonymously = anonymous || (APIKey === undefined);
+    let title = feedbackTitle;
+    if (feedbackType === 'bugreport') {
+      title = `${this.renderTopic(feedbackTopic)}: ${title}`;
+    }
 
     this.context.api.events.emit('submit-feedback',
-                                 feedbackTitle, feedbackMessage, feedbackHash, files,
-                                 sendAnonymously, (err: Error) => {
+                                 `${this.renderType(feedbackType)} - ${title}`,
+                                 this.systemInfo() + '\n' + feedbackMessage,
+                                 feedbackHash,
+                                 files,
+                                 sendAnonymously,
+                                 (err: Error) => {
       this.nextState.sending = false;
       if (err !== null) {
         if (err.name === 'ParameterInvalid') {
@@ -456,7 +735,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       } else {
         onShowDialog('success', 'Feedback sent', {
           text: 'Thank you for your feedback!\n\n'
-              + 'Your feedback will be reviewed before it gets published',
+              + 'Your feedback will be reviewed before it gets published.',
         }, [ { label: 'Close' } ]);
       }
 
@@ -482,6 +761,14 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         });
       }
     });
+  }
+
+  private handleChangeType = (newType: any) => {
+    this.nextState.feedbackType = newType;
+  }
+
+  private handleChangeTopic = (newTopic: any) => {
+    this.nextState.feedbackTopic = newTopic;
   }
 
   private handleChangeTitle = (newTitle: string) => {
@@ -512,10 +799,7 @@ function mapDispatchToProps(dispatch: Redux.Dispatch<any>): IActionProps {
 
 function mapStateToProps(state: any): IConnectedProps {
   return {
-    feedbackTitle: state.session.feedback.feedbackTitle,
-    feedbackMessage: state.session.feedback.feedbackMessage,
-    feedbackHash: state.session.feedback.feedbackHash,
-    feedbackFiles: state.session.feedback.feedbackFiles,
+    ...state.session.feedback,
     APIKey: state.confidential.account.nexus.APIKey,
     newestVersion: state.persistent.nexus.newestVersion,
   };
