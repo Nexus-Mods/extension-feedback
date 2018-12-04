@@ -272,7 +272,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             <li>check on <a onClick={this.openIssues}>https://github.com/Nexus-Mods/Vortex/issues</a> if your suggestion
             was already made and vote on existing reports instead of creating new ones. This helps us identify the most popular requests.</li>
             <li>use punctuation and linebreaks,</li>
-            <li>use english,</li>
+            <li>use English,</li>
             <li>be precise and to the point. Describe as concisely the feature you'd like,
               any form of illustration - if applicable - will help,</li>
             <li>always explain the reason for your suggestion. Don't just state the "what" but also the "why",</li>
@@ -389,7 +389,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           Please<br />
           <ul>
             <li>use punctuation and linebreaks,</li>
-            <li>use english,</li>
+            <li>use English,</li>
             <li>be precise and to the point. You don't have to form sentences.
                   A bug report is a technical document, not prose,</li>
             <li>report only one thing per message,</li>
