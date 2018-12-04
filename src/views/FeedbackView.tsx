@@ -56,11 +56,16 @@ interface IComponentState {
   sending: boolean;
 }
 
-const SAMPLE_REPORT = 'E.g.:\n' +
+const SAMPLE_REPORT_BUG = 'E.g.:\n' +
   'Summary: The mod downloads properly but when I try to install it nothing happens.\n' +
   'Expected Results: The mod is installed.\n' +
   'Actual Results: Nothing happens.\n' +
   'Steps to reproduce: Download a mod, then click Install inside the Actions menu.';
+
+const SAMPLE_REPORT_SUGGESTION = 'E.g.:\n'
+  + 'Summary: Please add a way to see the size of a mod on disk\n'
+  + 'Rationale: Space on my games partition is too limited so I want to delete the biggest, uninstalled mods.\n'
+  + 'Proposed Implementation: Add a column to the mods page that shows the size of the mod size.';
 
 class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   private static MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024;
@@ -93,9 +98,15 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
   public render(): JSX.Element {
     const { t } = this.props;
+    const { feedbackType } = this.state;
+
     const content = (this.context.api as any).isOutdated()
       ? this.renderOutdated()
       : this.renderContent();
+
+    if (feedbackType === undefined) {
+      return this.renderStartScreen();
+    }
 
     return (
       <MainPage>
@@ -110,6 +121,59 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             <MenuItem eventKey='question'>{t(this.renderType('question'))}</MenuItem>
           </DropdownButton>
           {content}
+        </FlexLayout>
+      </MainPage>
+    );
+  }
+
+  private renderStartScreen(): JSX.Element {
+    const { t } = this.props;
+    return (
+      <MainPage>
+        <FlexLayout type='column' className='feedback-type-selection'>
+          <FlexLayout.Fixed>
+            {t('Please select the type of feedback you\'d like to send in.')}
+          </FlexLayout.Fixed>
+          <FlexLayout.Fixed>
+            <FlexLayout type='row'>
+              <FlexLayout.Fixed>
+                <tooltip.IconButton
+                  vertical
+                  id='feedback-button-bug'
+                  icon='bug'
+                  tooltip={t('Report Bug')}
+                  className='btn-ghost'
+                  onClick={this.selectBug}
+                >
+                  {t(this.renderType('bugreport'))}
+                </tooltip.IconButton>
+              </FlexLayout.Fixed>
+              <FlexLayout.Fixed>
+                <tooltip.IconButton
+                  vertical
+                  id='feedback-button-suggestion'
+                  icon='idea'
+                  tooltip={t('Report Suggestion')}
+                  className='btn-ghost'
+                  onClick={this.selectSuggestion}
+                >
+                  {t(this.renderType('suggestion'))}
+                </tooltip.IconButton>
+              </FlexLayout.Fixed>
+              <FlexLayout.Fixed>
+                <tooltip.IconButton
+                  vertical
+                  id='feedback-button-question'
+                  icon='support'
+                  tooltip={t('Ask Question')}
+                  className='btn-ghost'
+                  onClick={this.selectQuestion}
+                >
+                  {t(this.renderType('question'))}
+                </tooltip.IconButton>
+              </FlexLayout.Fixed>
+            </FlexLayout>
+          </FlexLayout.Fixed>
         </FlexLayout>
       </MainPage>
     );
@@ -210,8 +274,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             <li>use punctuation and linebreaks,</li>
             <li>use english,</li>
             <li>be precise and to the point. Describe as concisely the feature you'd like,
-              any form of illustration - if applicable - will help</li>
-            <li>report only one thing per message,</li>
+              any form of illustration - if applicable - will help,</li>
+            <li>always explain the reason for your suggestion. Don't just state the "what" but also the "why",</li>
+            <li>report only one thing per message</li>
           </ul>
         </T>
       </FlexLayout.Fixed>
@@ -513,7 +578,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
   private renderMessageArea = (validationMessage: string) => {
     const { t } = this.props;
-    const { feedbackMessage } = this.state;
+    const { feedbackMessage, feedbackType } = this.state;
     return (
       <FormGroup validationState={validationMessage !== undefined ? 'error' : null} style={{ height: '100%' }}>
         <FlexLayout type='column'>
@@ -523,7 +588,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
               id='textarea-feedback'
               className='textarea-feedback'
               onChange={this.handleChange}
-              placeholder={t(SAMPLE_REPORT)}
+              placeholder={t(feedbackType === 'suggestion' ? SAMPLE_REPORT_SUGGESTION : SAMPLE_REPORT_BUG)}
             />
           </FlexLayout.Flex>
           {(validationMessage === undefined) ? null : (
@@ -765,6 +830,18 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
   private handleChangeType = (newType: any) => {
     this.nextState.feedbackType = newType;
+  }
+
+  private selectBug = () => {
+    this.nextState.feedbackType = 'bugreport';
+  }
+
+  private selectSuggestion = () => {
+    this.nextState.feedbackType = 'suggestion';
+  }
+
+  private selectQuestion = () => {
+    this.nextState.feedbackType = 'question';
   }
 
   private handleChangeTopic = (newTopic: any) => {
