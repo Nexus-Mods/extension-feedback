@@ -17,7 +17,7 @@ import {} from 'redux-thunk';
 import { file as tmpFile } from 'tmp';
 import {
   actions, ComponentEx, Dropzone, EmptyPlaceholder, FlexLayout, FormInput, fs,
-  MainPage, Toggle, tooltip, types, util,
+  MainPage, Toggle, tooltip, types, Usage, util,
 } from 'vortex-api';
 
 type ControlMode = 'urls' | 'files';
@@ -266,6 +266,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         <h4>
           {t('Describe in detail what you want to suggest.')}
         </h4>
+        <Usage persistent infoId='feedback-suggestion-instructions'>
         <T i18nKey='feedback-instructions' className='feedback-instructions'>
           Please<br />
           <ul>
@@ -279,25 +280,26 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             <li>report only one thing per message</li>
           </ul>
         </T>
+        </Usage>
       </FlexLayout.Fixed>
       ,
       <FlexLayout.Flex key='feedback-body'>
         <Panel>
           <PanelX.Body>
             <FlexLayout type='column' className='feedback-form'>
-              <FlexLayout.Fixed>
+              <FlexLayout.Fixed className='hide-when-small'>
                 <h4>{t('Title')}</h4>
               </FlexLayout.Fixed>
               <FlexLayout.Fixed>
                 {this.renderTitleInput(titleValid)}
               </FlexLayout.Fixed>
-              <FlexLayout.Fixed>
+              <FlexLayout.Fixed className='hide-when-small'>
                 <h4>{t('System Information')}</h4>
               </FlexLayout.Fixed>
               <FlexLayout.Fixed>
                 <div className='feedback-system-info'>{this.systemInfo()}</div>
               </FlexLayout.Fixed>
-              <FlexLayout.Fixed>
+              <FlexLayout.Fixed className='hide-when-small'>
                 <h4>{t('Your Message')}</h4>
               </FlexLayout.Fixed>
               <FlexLayout.Flex>
@@ -337,19 +339,19 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const messageValid = this.validateMessage();
 
     const fields = [
-      <FlexLayout.Fixed key='title-label'>
+      <FlexLayout.Fixed key='title-label' className='hide-when-small'>
         <h4>{t('Title')}</h4>
       </FlexLayout.Fixed>,
       <FlexLayout.Fixed key='title-input'>
         {this.renderTitleInput(titleValid)}
       </FlexLayout.Fixed>,
-      <FlexLayout.Fixed key='sysinfo-label'>
+      <FlexLayout.Fixed key='sysinfo-label' className='hide-when-small'>
         <h4>{t('System Information')}</h4>
       </FlexLayout.Fixed>,
       <FlexLayout.Fixed key='sysinfo-data'>
         <div className='feedback-system-info'>{this.systemInfo()}</div>
       </FlexLayout.Fixed>,
-      <FlexLayout.Fixed key='message-label'>
+      <FlexLayout.Fixed key='message-label' className='hide-when-small'>
         <h4>{t('Your Message')}</h4>
       </FlexLayout.Fixed>,
       <FlexLayout.Flex key='message-input'>
@@ -385,6 +387,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           {t('Describe in detail what you were doing and the feedback ' +
             'you would like to submit.')}
         </h4>
+        <Usage persistent infoId='feedback-bugreport-instructions'>
         <T i18nKey='feedback-instructions' className='feedback-instructions'>
           Please<br />
           <ul>
@@ -403,13 +406,14 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           bug fixing and the less time we spend on it, the more time we can spend
           creating great new features!
             </T>
+        </Usage>
       </FlexLayout.Fixed>
       ,
       <FlexLayout.Flex key='feedback-body'>
         <Panel>
           <PanelX.Body>
             <FlexLayout type='column' className='feedback-form'>
-              <FlexLayout.Fixed>
+              <FlexLayout.Fixed className='hide-when-small'>
                 <h4>{t('Topic')}</h4>
               </FlexLayout.Fixed>
               <FlexLayout.Fixed>
@@ -448,7 +452,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       return (
         <Alert bsStyle='warning'>
           <div>
-            {t('Vortex does not impose any speed limitations on downlooads, that\'s handled by the server.')}
+            {t('Vortex does not impose any speed limitations on downloads, that\'s handled by the server.')}
           </div>
           <div>
             {t('We can not forward your problems to the web department so please don\'t report temporary speed issues '

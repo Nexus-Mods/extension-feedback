@@ -168,8 +168,6 @@ async-each@^1.0.0:
 async@^2.1.2:
   version "2.6.0"
   resolved "https://registry.yarnpkg.com/async/-/async-2.6.0.tgz#61a29abb6fcc026fea77e56d1c6ec53a795951f4"
-  dependencies:
-    lodash "^4.14.0"
 
 asynckit@^0.4.0:
   version "0.4.0"
@@ -2206,8 +2204,8 @@ vm-browserify@0.0.4:
     indexof "0.0.1"
 
 vortex-api@Nexus-Mods/vortex-api:
-  version "0.15.7"
-  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/746c9da2e68964e0e061044fa1dbc7b40bb70bce"
+  version "0.17.0-r5"
+  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/a70c7da1c4add806ba52a3513429cd459917e7e1"
 
 warning@^3.0.0:
   version "3.0.0"

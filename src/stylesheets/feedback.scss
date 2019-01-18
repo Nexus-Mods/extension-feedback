@@ -60,6 +60,17 @@
   margin-bottom: $half-gutter;
 }
 
+@media (max-height: 899px) {
+  .usage-instructions-content {
+    max-height: 15vh;
+    overflow-y: auto;
+    align-items: initial !important;
+  }
+  .hide-when-small {
+    display: none;
+  }
+}
+
 .feedback-controls {
   justify-content: space-between;
 
