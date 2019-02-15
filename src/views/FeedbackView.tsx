@@ -1,14 +1,14 @@
 import { addFeedbackFile, clearFeedbackFiles, removeFeedbackFile } from '../actions/session';
+import { FeedbackTopic, FeedbackType } from '../types/feedbackTypes';
 import { IFeedbackFile } from '../types/IFeedbackFile';
-import { FeedbackType, FeedbackTopic } from '../types/feedbackTypes';
 
 import * as Promise from 'bluebird';
 import { remote } from 'electron';
 import * as os from 'os';
 import * as path from 'path';
 import * as React from 'react';
-import { DropdownButton,
-  ListGroup, ListGroupItem, MenuItem, Panel, FormGroup, ControlLabel, FormControl, Alert,
+import { Alert,
+  ControlLabel, DropdownButton, FormControl, FormGroup, ListGroup, ListGroupItem, MenuItem, Panel,
 } from 'react-bootstrap';
 import { Trans, translate } from 'react-i18next';
 import { connect } from 'react-redux';
@@ -64,6 +64,7 @@ const SAMPLE_REPORT_BUG = 'E.g.:\n' +
 
 const SAMPLE_REPORT_SUGGESTION = 'E.g.:\n'
   + 'Summary: Please add a way to see the size of a mod on disk\n'
+  // tslint:disable-next-line:max-line-length
   + 'Rationale: Space on my games partition is too limited so I want to delete the biggest, uninstalled mods.\n'
   + 'Proposed Implementation: Add a column to the mods page that shows the size of the mod size.';
 
@@ -205,8 +206,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           icon='auto-update'
           text={t('Vortex outdated')}
           fill={true}
-          subtext={t('Sorry, due to large amount of feedback we receive we can\'t accept feedback from '
-                   + 'older versions since the issue may already have been addressed.')}
+          subtext={t('Sorry, due to large amount of feedback we receive we can\'t accept feedback '
+                   + 'from older versions since the issue may already have been addressed.')}
         />
       </FlexLayout.Flex>
     );
@@ -261,7 +262,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
     const T: any = Trans;
     const PanelX: any = Panel;
-    return [
+    return [(
+      // tslint:disable:max-line-length
       <FlexLayout.Fixed key='feedback-instructions'>
         <h4>
           {t('Describe in detail what you want to suggest.')}
@@ -282,7 +284,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         </T>
         </Usage>
       </FlexLayout.Fixed>
-      ,
+      // tslint:enable:max-line-length
+    ), (
       <FlexLayout.Flex key='feedback-body'>
         <Panel>
           <PanelX.Body>
@@ -328,7 +331,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           </PanelX.Body>
         </Panel>
       </FlexLayout.Flex>
-    ];
+    )];
   }
 
   private renderContentBugReport = () => {
@@ -339,108 +342,123 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const messageValid = this.validateMessage();
 
     const fields = [
-      <FlexLayout.Fixed key='title-label' className='hide-when-small'>
-        <h4>{t('Title')}</h4>
-      </FlexLayout.Fixed>,
-      <FlexLayout.Fixed key='title-input'>
-        {this.renderTitleInput(titleValid)}
-      </FlexLayout.Fixed>,
-      <FlexLayout.Fixed key='sysinfo-label' className='hide-when-small'>
-        <h4>{t('System Information')}</h4>
-      </FlexLayout.Fixed>,
-      <FlexLayout.Fixed key='sysinfo-data'>
-        <div className='feedback-system-info'>{this.systemInfo()}</div>
-      </FlexLayout.Fixed>,
-      <FlexLayout.Fixed key='message-label' className='hide-when-small'>
-        <h4>{t('Your Message')}</h4>
-      </FlexLayout.Fixed>,
-      <FlexLayout.Flex key='message-input'>
-        {this.renderMessageArea(messageValid)}
-      </FlexLayout.Flex>,
-      <FlexLayout.Flex className='feedback-file-drop-flex' key='files-dropzone'>
-        <Dropzone
-          accept={['files']}
-          icon='folder-download'
-          drop={this.dropFeedback}
-          dropText='Drop files to attach'
-          clickText='Click to browse for files to attach'
-          dialogHint={t('Select file to attach')}
-        />
-      </FlexLayout.Flex>,
-      <FlexLayout.Fixed key='attach-button'>
-        {t('or')}{this.renderAttachButton()}
-      </FlexLayout.Fixed>,
-      <FlexLayout.Fixed key='files-list'>
-        <ListGroup className='feedback-files'>
-          {Object.keys(feedbackFiles).map(this.renderFeedbackFile)}
-        </ListGroup>
-        {this.renderFilesArea((titleValid === undefined) && (messageValid === undefined))}
-      </FlexLayout.Fixed>
+      (
+        <FlexLayout.Fixed key='title-label' className='hide-when-small'>
+          <h4>{t('Title')}</h4>
+        </FlexLayout.Fixed>
+      ), (
+        <FlexLayout.Fixed key='title-input'>
+          {this.renderTitleInput(titleValid)}
+        </FlexLayout.Fixed>
+      ), (
+        <FlexLayout.Fixed key='sysinfo-label' className='hide-when-small'>
+          <h4>{t('System Information')}</h4>
+        </FlexLayout.Fixed>
+      ), (
+        <FlexLayout.Fixed key='sysinfo-data'>
+          <div className='feedback-system-info'>{this.systemInfo()}</div>
+        </FlexLayout.Fixed>
+      ), (
+        <FlexLayout.Fixed key='message-label' className='hide-when-small'>
+          <h4>{t('Your Message')}</h4>
+        </FlexLayout.Fixed>
+      ), (
+        <FlexLayout.Flex key='message-input'>
+          {this.renderMessageArea(messageValid)}
+        </FlexLayout.Flex>
+      ), (
+        <FlexLayout.Flex className='feedback-file-drop-flex' key='files-dropzone'>
+          <Dropzone
+            accept={['files']}
+            icon='folder-download'
+            drop={this.dropFeedback}
+            dropText='Drop files to attach'
+            clickText='Click to browse for files to attach'
+            dialogHint={t('Select file to attach')}
+          />
+        </FlexLayout.Flex>
+      ), (
+        <FlexLayout.Fixed key='attach-button'>
+          {t('or')}{this.renderAttachButton()}
+        </FlexLayout.Fixed>
+      ), (
+        <FlexLayout.Fixed key='files-list'>
+          <ListGroup className='feedback-files'>
+            {Object.keys(feedbackFiles).map(this.renderFeedbackFile)}
+          </ListGroup>
+          {this.renderFilesArea((titleValid === undefined) && (messageValid === undefined))}
+        </FlexLayout.Fixed>
+      ),
     ];
-
 
     const T: any = Trans;
     const PanelX: any = Panel;
     return [
-      <FlexLayout.Fixed key='feedback-instructions'>
-        <h4>
-          {t('Describe in detail what you were doing and the feedback ' +
-            'you would like to submit.')}
-        </h4>
-        <Usage persistent infoId='feedback-bugreport-instructions'>
-        <T i18nKey='feedback-instructions' className='feedback-instructions'>
-          Please<br />
-          <ul>
-            <li>use punctuation and linebreaks,</li>
-            <li>use English,</li>
-            <li>be precise and to the point. You don't have to form sentences.
+      (
+        <FlexLayout.Fixed key='feedback-instructions'>
+          <h4>
+            {t('Describe in detail what you were doing and the feedback ' +
+              'you would like to submit.')}
+          </h4>
+          <Usage persistent infoId='feedback-bugreport-instructions'>
+            <T i18nKey='feedback-instructions' className='feedback-instructions'>
+              Please<br />
+              <ul>
+                <li>use punctuation and linebreaks,</li>
+                <li>use English,</li>
+                <li>be precise and to the point. You don't have to form sentences.
                   A bug report is a technical document, not prose,</li>
-            <li>report only one thing per message,</li>
-            <li>avoid making assumptions or your own conclusions, just report what you saw
+                <li>report only one thing per message,</li>
+                <li>avoid making assumptions or your own conclusions, just report what you saw
                   and what you expected to see,</li>
-            <li>include an example of how to reproduce the error if you can.
-              Even if its a general problem ("fomods using feature x zig when they should
+                <li>include an example of how to reproduce the error if you can.
+                  Even if its a general problem ("fomods using feature x zig when they should
                   zag") include one sequence of actions that expose the problem.</li>
-          </ul>
-          Trying to reproduce a bug is usually what takes the most amount of time in
-          bug fixing and the less time we spend on it, the more time we can spend
-          creating great new features!
+              </ul>
+              Trying to reproduce a bug is usually what takes the most amount of time in
+              bug fixing and the less time we spend on it, the more time we can spend
+              creating great new features!
             </T>
-        </Usage>
-      </FlexLayout.Fixed>
-      ,
-      <FlexLayout.Flex key='feedback-body'>
-        <Panel>
-          <PanelX.Body>
-            <FlexLayout type='column' className='feedback-form'>
-              <FlexLayout.Fixed className='hide-when-small'>
-                <h4>{t('Topic')}</h4>
-              </FlexLayout.Fixed>
-              <FlexLayout.Fixed>
-                <FlexLayout type='row'>
-                  <FlexLayout.Fixed>
-                    <DropdownButton
-                      id='feedback-topic-dropdown'
-                      title={t(this.renderTopic(feedbackTopic))}
-                      onSelect={this.handleChangeTopic}
-                    >
-                      <MenuItem eventKey='crash'>{t(this.renderTopic('crash'))}</MenuItem>
-                      <MenuItem eventKey='login_problems'>{t(this.renderTopic('login_problems'))}</MenuItem>
-                      <MenuItem eventKey='slow_downloads'>{t(this.renderTopic('slow_downloads'))}</MenuItem>
-                      <MenuItem eventKey='other'>{t(this.renderTopic('other'))}</MenuItem>
-                    </DropdownButton>
-                  </FlexLayout.Fixed>
-                  <FlexLayout.Flex>
-                    {this.renderTopicComment()}
-                    {feedbackTopic === undefined ? <div>{t('Please select a topic')}</div> : null}
-                  </FlexLayout.Flex>
-                </FlexLayout>
-              </FlexLayout.Fixed>
-              {feedbackTopic !== undefined ? fields : null}
-            </FlexLayout>
-          </PanelX.Body>
-        </Panel>
-      </FlexLayout.Flex>
+          </Usage>
+        </FlexLayout.Fixed>
+      ), (
+        <FlexLayout.Flex key='feedback-body'>
+          <Panel>
+            <PanelX.Body>
+              <FlexLayout type='column' className='feedback-form'>
+                <FlexLayout.Fixed className='hide-when-small'>
+                  <h4>{t('Topic')}</h4>
+                </FlexLayout.Fixed>
+                <FlexLayout.Fixed>
+                  <FlexLayout type='row'>
+                    <FlexLayout.Fixed>
+                      <DropdownButton
+                        id='feedback-topic-dropdown'
+                        title={t(this.renderTopic(feedbackTopic))}
+                        onSelect={this.handleChangeTopic}
+                      >
+                        <MenuItem eventKey='crash'>{t(this.renderTopic('crash'))}</MenuItem>
+                        <MenuItem eventKey='login_problems'>
+                          {t(this.renderTopic('login_problems'))}
+                        </MenuItem>
+                        <MenuItem eventKey='slow_downloads'>
+                          {t(this.renderTopic('slow_downloads'))}
+                        </MenuItem>
+                        <MenuItem eventKey='other'>{t(this.renderTopic('other'))}</MenuItem>
+                      </DropdownButton>
+                    </FlexLayout.Fixed>
+                    <FlexLayout.Flex>
+                      {this.renderTopicComment()}
+                      {feedbackTopic === undefined ? <div>{t('Please select a topic')}</div> : null}
+                    </FlexLayout.Flex>
+                  </FlexLayout>
+                </FlexLayout.Fixed>
+                {feedbackTopic !== undefined ? fields : null}
+              </FlexLayout>
+            </PanelX.Body>
+          </Panel>
+        </FlexLayout.Flex>
+      ),
     ];
   }
 
@@ -452,19 +470,21 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       return (
         <Alert bsStyle='warning'>
           <div>
-            {t('Vortex does not impose any speed limitations on downloads, that\'s handled by the server.')}
+            {t('Vortex does not impose any speed limitations on downloads, '
+              + 'that\'s handled by the server.')}
           </div>
           <div>
-            {t('We can not forward your problems to the web department so please don\'t report temporary speed issues '
-              + 'or problems regarding the non-premium speed cap through this form!')}
+            {t('We can not forward your problems to the web department so please don\'t report '
+              + 'temporary speed issues or problems regarding the non-premium speed cap through '
+              + 'this form!')}
           </div>
         </Alert>
       );
     } else if (feedbackTopic === 'login_problems') {
       return (
         <Alert bsStyle='warning'>
-          {t('Please make sure you\'ve read the login instructions in Vortex, on the authorisation page and consulted the '
-           + 'knowledge base before reporting login issues.')}
+          {t('Please make sure you\'ve read the login instructions in Vortex, on the authorisation '
+           + 'page and consulted the knowledge base before reporting login issues.')}
         </Alert>
       );
     }
@@ -584,15 +604,20 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const { t } = this.props;
     const { feedbackMessage, feedbackType } = this.state;
     return (
-      <FormGroup validationState={validationMessage !== undefined ? 'error' : null} style={{ height: '100%' }}>
+      <FormGroup
+        validationState={validationMessage !== undefined ? 'error' : null}
+        style={{ height: '100%' }}
+      >
         <FlexLayout type='column'>
           <FlexLayout.Flex>
-            <FormControl componentClass='textarea'
+            <FormControl
+              componentClass='textarea'
               value={feedbackMessage || ''}
               id='textarea-feedback'
               className='textarea-feedback'
               onChange={this.handleChange}
-              placeholder={t(feedbackType === 'suggestion' ? SAMPLE_REPORT_SUGGESTION : SAMPLE_REPORT_BUG)}
+              placeholder={t(feedbackType === 'suggestion'
+                ? SAMPLE_REPORT_SUGGESTION : SAMPLE_REPORT_BUG)}
             />
           </FlexLayout.Flex>
           {(validationMessage === undefined) ? null : (
@@ -637,7 +662,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           >
             {t('Send anonymously')}
           </Toggle>
-          {t('If you send feedback anonymously we can not give you updates on your report or enquire for more details.')}
+          {t('If you send feedback anonymously we can not give you updates on your report '
+           + 'or enquire for more details.')}
         </FlexLayout.Fixed>
         <FlexLayout.Fixed>
           <tooltip.Button
@@ -645,7 +671,10 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             id='btn-submit-feedback'
             tooltip={t('Submit Feedback')}
             onClick={this.submitFeedback}
-            disabled={sending || feedbackTitle.length === 0 || feedbackMessage.length === 0 || !valid}
+            disabled={sending
+                    || (feedbackTitle.length === 0)
+                    || (feedbackMessage.length === 0)
+                    || !valid}
           >
             {t('Submit Feedback')}
           </tooltip.Button>
