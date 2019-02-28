@@ -1,6 +1,5 @@
 import { addFeedbackFile, setFeedbackHash, setFeedbackMessage,
-         setFeedbackTitle, 
-         setFeedbackType} from './actions/session';
+         setFeedbackTitle, setFeedbackType} from './actions/session';
 import { sessionReducer } from './reducers/session';
 import { IFeedbackFile } from './types/IFeedbackFile';
 
@@ -10,6 +9,9 @@ import * as Promise from 'bluebird';
 import { remote } from 'electron';
 import * as path from 'path';
 import { fs, log, types } from 'vortex-api';
+
+const WHITESCREEN_THREAD =
+  'https://forums.nexusmods.com/index.php?/topic/7151166-whitescreen-reasons/';
 
 function findCrashDumps() {
   const nativeCrashesPath = path.join(remote.app.getPath('userData'), 'temp', 'dumps');
@@ -26,17 +28,20 @@ enum ErrorType {
 }
 
 const KNOWN_ERRORS = {
+  // tslint:disable-next-line: object-literal-key-quotes
   'e0434f4d': ErrorType.CLR,
+  // tslint:disable-next-line: object-literal-key-quotes
   'e0000008': ErrorType.OOM,
-}
+};
 
 function errorText(type: ErrorType): string {
-  switch(type) {
-    case ErrorType.CLR: return 'The exception you got indicates that the installation of the .Net Framework '
-      + 'installed on your system is invalid. This should be easily solved by reinstalling it.'; 
-    case ErrorType.OOM: return 'The exception you got indicates an out of memory situation. This can have different '
-      + 'reasons, most commonly a system misconfiguration where it doesn\'t provide enough virtual memory for stable '
-      + 'operation.';
+  switch (type) {
+    case ErrorType.CLR: return 'The exception you got indicates that the installation of the '
+      + '.Net Framework installed on your system is invalid. '
+      + 'This should be easily solved by reinstalling it.';
+    case ErrorType.OOM: return 'The exception you got indicates an out of memory situation. '
+      + 'This can have different reasons, most commonly a system misconfiguration where it '
+      + 'doesn\'t provide enough virtual memory for stable operation.';
   }
 }
 
@@ -51,8 +56,7 @@ function recognisedError(crashDumps: string[]): Promise<ErrorType> {
         return Promise.reject(new Error('Failed to parse'));
       }
     })
-    .catch(() => null)
-  )
+    .catch(() => null))
   .filter(codes => !!codes)
   .reduce((prev, codes) => prev.concat(codes), [])
   .filter(code => KNOWN_ERRORS[code] !== undefined)
@@ -62,12 +66,12 @@ function recognisedError(crashDumps: string[]): Promise<ErrorType> {
 function reportKnownError(api: types.IExtensionApi, dismiss: () => void, errType: ErrorType) {
   const bbcode = errorText(errType)
     + '<br/><br/>Please visit '
-    + '[url="https://forums.nexusmods.com/index.php?/topic/7151166-whitescreen-reasons/"]this thread[/url] '
-    + 'for more in-depth information.'
+    + `[url="${WHITESCREEN_THREAD}"]`
+    + 'this thread[/url] for more in-depth information.';
   return api.showDialog('info', 'Exception occurred', {
     bbcode,
   }, [
-    { label: 'Close' }
+    { label: 'Close' },
   ]);
 }
 
@@ -134,9 +138,10 @@ function nativeCrashCheck(api: types.IExtensionApi): Promise<void> {
                 action: dismiss => {
                   const bbcode = 'The last session of Vortex logged an exception.'
                     + '<br/><br/>Please visit '
-                    + '[url="https://forums.nexusmods.com/index.php?/topic/7151166-whitescreen-reasons/"]this thread[/url] '
+                    + `[url="${WHITESCREEN_THREAD}"]this thread[/url] `
                     + 'for typical reasons causing this.<br/>'
-                    + '[color="red"]Please report this issue only if you\'re sure none of those reasons apply to you![/color]'
+                    + '[color="red"]Please report this issue only if you\'re sure none of '
+                    + 'those reasons apply to you![/color]';
 
                   return api.showDialog('error', 'Exception', {
                     bbcode,
@@ -144,10 +149,10 @@ function nativeCrashCheck(api: types.IExtensionApi): Promise<void> {
                     {
                       label: 'Report', action: () => {
                         sendCrashFeedback(api, dismiss, crashDumps);
-                      }
+                      },
                     },
                     { label: 'Close' },
-                  ])
+                  ]);
                 },
               });
           } else {
