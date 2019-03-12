@@ -132,3 +132,21 @@
     }
   }
 }
+
+.feedback-search-result {
+  position: absolute;
+  z-index: 1;
+  background-color: $brand-menu;
+  border: $border-width solid $border-color;
+  padding: 8px;
+  max-height: 10em;
+  overflow-y: auto;
+}
+
+.feedback-result-tag {
+  font-size: small;
+  background-color: rgba($gray-light, 0.3);
+  border: $border-width solid $border-color;
+  display: inline;
+  padding: 2px 4px;
+}

@@ -4,6 +4,7 @@ import { IFeedbackFile } from '../types/IFeedbackFile';
 
 import * as Promise from 'bluebird';
 import { remote } from 'electron';
+import { partial_ratio } from 'fuzzball';
 import * as os from 'os';
 import * as path from 'path';
 import * as React from 'react';
@@ -13,11 +14,11 @@ import { Alert,
 import { Trans, translate } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
-import {} from 'redux-thunk';
+import { ThunkDispatch } from 'redux-thunk';
 import { file as tmpFile } from 'tmp';
 import {
   actions, ComponentEx, Dropzone, EmptyPlaceholder, FlexLayout, FormInput, fs,
-  MainPage, Toggle, tooltip, types, Usage, util,
+  log, MainPage, Toggle, tooltip, types, Usage, util,
 } from 'vortex-api';
 
 type ControlMode = 'urls' | 'files';
@@ -52,6 +53,8 @@ interface IComponentState {
   feedbackTopic: FeedbackTopic;
   feedbackTitle: string;
   feedbackMessage: string;
+  filteredIssues: any[];
+  titleFocused: boolean;
   anonymous: boolean;
   sending: boolean;
 }
@@ -72,6 +75,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   private static MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024;
   private static MIN_TITLE_LENGTH = 10;
   private static MIN_TEXT_LENGTH = 50;
+  private issues: any[] = [];
   constructor(props: IProps) {
     super(props);
 
@@ -80,9 +84,21 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       feedbackTopic: props.feedbackTopic,
       feedbackTitle: props.feedbackTitle,
       feedbackMessage: props.feedbackMessage,
+      filteredIssues: [],
+      titleFocused: false,
       anonymous: false,
       sending: false,
     });
+}
+
+  public componentWillMount() {
+    fs.readFileAsync(path.join(__dirname, 'issues.json'), { encoding: 'utf-8' })
+      .then(data => {
+        this.issues = JSON.parse(data);
+      })
+      .catch(err => {
+        log('error', 'failed to read issue preview', err.message);
+      });
   }
 
   public componentWillReceiveProps(newProps: IProps) {
@@ -579,9 +595,37 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     onRemoveFeedbackFile(feedbackFileId);
   }
 
+  private handleFocusTitle = (focused: boolean) => {
+    // delay a bit, otherwise the links can't be clicked
+    setTimeout(() => {
+      this.nextState.titleFocused = focused;
+    }, 100);
+  }
+
+  private tagName(type: string) {
+    return {
+      'wiki': 'Wiki',
+      'faq': 'FAQ',
+      'issue': 'Tracker',
+    }[type] || '???';
+  }
+
+  private renderSearchResult = (iss: any) => {
+    return (
+      <div key={iss.title}>
+        <div className='feedback-result-tag'>
+          {this.tagName(iss.type)}
+        </div>
+        {' '}
+        <a href={iss.url}>{iss.title}</a>
+      </div>
+    );
+  }
+
   private renderTitleInput = (validationMessage: string) => {
     const { t } = this.props;
-    const { feedbackTitle } = this.state;
+    const { feedbackTitle, filteredIssues, titleFocused } = this.state;
+
     return (
       <FormGroup validationState={validationMessage !== undefined ? 'error' : null}>
         <FormInput
@@ -589,8 +633,14 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           label={t('Title')}
           value={feedbackTitle}
           onChange={this.handleChangeTitle}
+          onFocus={this.handleFocusTitle}
           placeholder={t('Please provide a title')}
+          debounceTimer={50}
         />
+        {(filteredIssues.length > 0) && titleFocused ? (
+        <div className='feedback-search-result'>
+          {filteredIssues.map(this.renderSearchResult)}
+        </div>) : null}
         {(this.validateMessage === undefined) ? null : (
           <ControlLabel>
             {t(validationMessage)}
@@ -883,6 +933,19 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
   private handleChangeTitle = (newTitle: string) => {
     this.nextState.feedbackTitle = newTitle;
+    if (newTitle.length > 2) {
+      this.nextState.filteredIssues = this.issues
+        .map(iss => ({
+          ratio: partial_ratio(newTitle, iss.title),
+          title: iss.title,
+          url: iss.url,
+          type: iss.type,
+        }))
+        .filter(iss => iss.ratio > 90)
+        .sort((lhs, rhs) => rhs.ratio - lhs.ratio);
+    } else {
+      this.nextState.filteredIssues = [];
+    }
   }
 
   private handleChange = (event) => {
@@ -890,7 +953,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 }
 
-function mapDispatchToProps(dispatch: Redux.Dispatch<any>): IActionProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<any, null, Redux.Action>): IActionProps {
   return {
     onShowActivity: (message: string, id?: string) =>
       util.showActivity(dispatch, message, id),
