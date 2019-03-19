@@ -692,6 +692,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         dropup
       >
         <MenuItem eventKey='log'>{t('Vortex Log')}</MenuItem>
+        <MenuItem eventKey='netlog'>{t('Vortex Network Log')}</MenuItem>
         <MenuItem eventKey='settings'>{t('Application Settings')}</MenuItem>
         <MenuItem eventKey='state'>{t('Application State')}</MenuItem>
         <MenuItem eventKey='actions'>{t('Recent State Changes')}</MenuItem>
@@ -741,6 +742,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const { t, onShowDialog } = this.props;
     switch (eventKey) {
       case 'log': this.attachLog(); break;
+      case 'netlog': this.attachNetLog(); break;
       case 'actions': this.attachActions('Action History'); break;
       case 'settings': {
         onShowDialog('question', t('Confirm'), {
@@ -819,6 +821,11 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             });
         });
     });
+  }
+
+  private attachNetLog() {
+    this.attachFile(
+      path.join(remote.app.getPath('userData'), 'network.log'), 'log');
   }
 
   private attachLog() {
