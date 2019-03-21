@@ -59,6 +59,13 @@ interface IComponentState {
   sending: boolean;
 }
 
+interface IPreviewIssue {
+  type: string;
+  title: string;
+  url: string;
+  keywords: string[];
+}
+
 const SAMPLE_REPORT_BUG = 'E.g.:\n' +
   'Summary: The mod downloads properly but when I try to install it nothing happens.\n' +
   'Expected Results: The mod is installed.\n' +
@@ -75,7 +82,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   private static MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024;
   private static MIN_TITLE_LENGTH = 10;
   private static MIN_TEXT_LENGTH = 50;
-  private issues: any[] = [];
+  private issues: IPreviewIssue[] = [];
   constructor(props: IProps) {
     super(props);
 
@@ -276,6 +283,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const titleValid = this.validateTitle();
     const messageValid = this.validateMessage();
 
+    const maySend = ((titleValid === undefined) || (titleValid.valid))
+                 && (messageValid === undefined);
+
     const T: any = Trans;
     const PanelX: any = Panel;
     return [(
@@ -341,7 +351,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
                 <ListGroup className='feedback-files'>
                   {Object.keys(feedbackFiles).map(this.renderFeedbackFile)}
                 </ListGroup>
-                {this.renderFilesArea((titleValid === undefined) && (messageValid === undefined))}
+                {this.renderFilesArea(maySend)}
               </FlexLayout.Fixed>
             </FlexLayout>
           </PanelX.Body>
@@ -356,6 +366,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
     const titleValid = this.validateTitle();
     const messageValid = this.validateMessage();
+
+    const maySend = ((titleValid === undefined) || (titleValid.valid))
+                 && (messageValid === undefined);
 
     const fields = [
       (
@@ -402,7 +415,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           <ListGroup className='feedback-files'>
             {Object.keys(feedbackFiles).map(this.renderFeedbackFile)}
           </ListGroup>
-          {this.renderFilesArea((titleValid === undefined) && (messageValid === undefined))}
+          {this.renderFilesArea(maySend)}
         </FlexLayout.Fixed>
       ),
     ];
@@ -538,13 +551,23 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     util.opn('https://forums.nexusmods.com/index.php?/forum/4306-vortex-support').catch(() => null);
   }
 
-  private validateTitle(): string {
+  private validateTitle(): { valid: boolean, text: string } {
     const { t } = this.props;
-    const { feedbackTitle } = this.state;
+    const { feedbackTitle, filteredIssues } = this.state;
 
     if ((feedbackTitle.length > 0) && (feedbackTitle.length < FeedbackPage.MIN_TITLE_LENGTH)) {
-      return t('The title needs to be at least {{minLength}} characters',
-               { replace: { minLength: FeedbackPage.MIN_TITLE_LENGTH } });
+      return {
+        valid: false,
+        text: t('The title needs to be at least {{minLength}} characters',
+          { replace: { minLength: FeedbackPage.MIN_TITLE_LENGTH } })
+      };
+    }
+
+    if (filteredIssues.length > 0) {
+      return {
+        valid: true,
+        text: t('This may be a known issue, please click the title again to see similar issues.'),
+      };
     }
 
     return undefined;
@@ -622,12 +645,16 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     );
   }
 
-  private renderTitleInput = (validationMessage: string) => {
+  private renderTitleInput = (validationMessage: { valid: boolean, text: string }) => {
     const { t } = this.props;
     const { feedbackTitle, filteredIssues, titleFocused } = this.state;
 
+    const validationState = validationMessage === undefined
+      ? null
+      : validationMessage.valid ? 'warning' : 'error';
+
     return (
-      <FormGroup validationState={validationMessage !== undefined ? 'error' : null}>
+      <FormGroup validationState={validationState}>
         <FormInput
           id='feedback-input'
           label={t('Title')}
@@ -641,9 +668,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         <div className='feedback-search-result'>
           {filteredIssues.map(this.renderSearchResult)}
         </div>) : null}
-        {(this.validateMessage === undefined) ? null : (
+        {(validationMessage === undefined) ? null : (
           <ControlLabel>
-            {t(validationMessage)}
+            {validationMessage.text}
           </ControlLabel>
         )}
       </FormGroup>
@@ -673,7 +700,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           {(validationMessage === undefined) ? null : (
             <FlexLayout.Fixed>
               <ControlLabel>
-                {t(validationMessage)}
+                {validationMessage}
               </ControlLabel>
             </FlexLayout.Fixed>
           )}
@@ -938,12 +965,21 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     this.nextState.feedbackTopic = newTopic;
   }
 
+  private ratio(title: string, issue: IPreviewIssue) {
+    const titleL = title.toLowerCase();
+    if (issue.keywords.find(keyword => titleL.indexOf(keyword) !== -1)) {
+      return 100;
+    } else {
+      return partial_ratio(title, issue.title);
+    }
+  }
+
   private handleChangeTitle = (newTitle: string) => {
     this.nextState.feedbackTitle = newTitle;
     if (newTitle.length > 2) {
       this.nextState.filteredIssues = this.issues
         .map(iss => ({
-          ratio: partial_ratio(newTitle, iss.title),
+          ratio: this.ratio(newTitle, iss),
           title: iss.title,
           url: iss.url,
           type: iss.type,
