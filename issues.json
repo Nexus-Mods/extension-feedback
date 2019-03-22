@@ -548,5 +548,16 @@
     "title": "White screen when opening settings",
     "url": "https://github.com/Nexus-Mods/Vortex/issues/181",
     "keywords": []
+  },
+  {
+    "type": "issue",
+    "title": "Slow download speeds when downloading through Vortex",
+    "url": "https://github.com/Nexus-Mods/Vortex/issues/1215",
+    "keywords": [
+      "speed",
+      "slow",
+      "cap",
+      "download"
+    ]
   }
 ]
