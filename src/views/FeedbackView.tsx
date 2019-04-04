@@ -11,7 +11,7 @@ import * as React from 'react';
 import { Alert,
   ControlLabel, DropdownButton, FormControl, FormGroup, ListGroup, ListGroupItem, MenuItem, Panel,
 } from 'react-bootstrap';
-import { Trans, translate } from 'react-i18next';
+import { Trans, withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
@@ -996,7 +996,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 }
 
-function mapDispatchToProps(dispatch: ThunkDispatch<any, null, Redux.Action>): IActionProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<types.IState, null, Redux.Action>): IActionProps {
   return {
     onShowActivity: (message: string, id?: string) =>
       util.showActivity(dispatch, message, id),
@@ -1022,6 +1022,6 @@ function mapStateToProps(state: any): IConnectedProps {
 }
 
 export default
-  translate(['common'], { wait: false })(
+  withTranslation(['common'])(
     connect(mapStateToProps, mapDispatchToProps)(
-      FeedbackPage)) as React.ComponentClass<{}>;
+      FeedbackPage) as any) as React.ComponentClass<{}>;
