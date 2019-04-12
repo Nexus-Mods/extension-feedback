@@ -203,11 +203,10 @@ function init(context: types.IExtensionContext) {
 
         fs.statAsync(logSessionPath)
           .then((stats) => {
-            const fileSize = stats.size / 1024 !== 0 ? Math.round(stats.size / 1024) : 1;
             const feedbackFile: IFeedbackFile = {
               filename: path.basename(logSessionPath),
               filePath: logSessionPath,
-              size: fileSize,
+              size: stats.size,
               type: 'log',
             };
             context.api.store.dispatch(addFeedbackFile(feedbackFile));
