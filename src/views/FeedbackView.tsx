@@ -730,18 +730,29 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   private renderFilesArea(valid: boolean): JSX.Element {
     const { t, APIKey } = this.props;
     const { anonymous, feedbackTitle, feedbackMessage, sending } = this.state;
+
+    const anon = anonymous || (APIKey === undefined);
     return (
       <FlexLayout fill={false} type='row' className='feedback-controls'>
         <FlexLayout.Fixed>
           <Toggle
-            checked={anonymous || (APIKey === undefined)}
+            checked={anon}
             onToggle={this.setAnonymous}
             disabled={APIKey === undefined}
           >
             {t('Send anonymously')}
           </Toggle>
-          {t('If you send feedback anonymously we can not give you updates on your report '
-           + 'or enquire for more details.')}
+          {(APIKey === undefined) ? (
+            <Alert bsStyle='warning'>
+              {t('You are not logged in. Please include your username in your message to give us a '
+                + 'chance to reply.')}
+            </Alert>
+          ) : anon ? (
+            <Alert bsStyle='warning'>
+              {t('If you send feedback anonymously we can not give you updates on your report '
+                + 'or enquire for more details.')}
+            </Alert>
+          ) : null}
         </FlexLayout.Fixed>
         <FlexLayout.Fixed>
           <tooltip.Button
