@@ -169,7 +169,12 @@ function nativeCrashCheck(api: types.IExtensionApi): Promise<void> {
             noDismiss: true,
             actions,
           });
-        }));
+        }))
+        .catch(err => {
+          // There is almost certainly a more serious underlying problem but this
+          // particular symptom isn't worth reporting
+          log('warn', 'Failed to check for native dumps', err.message);
+        });
 }
 
 function init(context: types.IExtensionContext) {
