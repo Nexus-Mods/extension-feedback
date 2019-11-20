@@ -2,7 +2,7 @@ import { addFeedbackFile, clearFeedbackFiles, removeFeedbackFile } from '../acti
 import { FeedbackTopic, FeedbackType } from '../types/feedbackTypes';
 import { IFeedbackFile } from '../types/IFeedbackFile';
 
-import * as Promise from 'bluebird';
+import Promise from 'bluebird';
 import { remote } from 'electron';
 import { partial_ratio } from 'fuzzball';
 import * as os from 'os';

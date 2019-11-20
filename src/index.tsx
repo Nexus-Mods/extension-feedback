@@ -5,7 +5,7 @@ import { IFeedbackFile } from './types/IFeedbackFile';
 
 import FeedbackView from './views/FeedbackView';
 
-import * as Promise from 'bluebird';
+import Promise from 'bluebird';
 import { remote } from 'electron';
 import * as path from 'path';
 import { fs, log, types } from 'vortex-api';
