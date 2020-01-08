@@ -128,7 +128,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       ? this.renderOutdated()
       : this.renderContent();
 
-    if (feedbackType === undefined) {
+    if (!feedbackType) {
       return this.renderStartScreen();
     }
 
@@ -559,7 +559,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       return {
         valid: false,
         text: t('The title needs to be at least {{minLength}} characters',
-          { replace: { minLength: FeedbackPage.MIN_TITLE_LENGTH } })
+          { replace: { minLength: FeedbackPage.MIN_TITLE_LENGTH } }),
       };
     }
 
@@ -627,9 +627,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
   private tagName(type: string) {
     return {
-      'wiki': 'Wiki',
-      'faq': 'FAQ',
-      'issue': 'Tracker',
+      wiki: 'Wiki',
+      faq: 'FAQ',
+      issue: 'Tracker',
     }[type] || '???';
   }
 
@@ -845,8 +845,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       postfix: '.json',
     }, (err, tmpPath: string, fd: number, cleanup: () => void) => {
       (util as any).getReduxLog()
-        .then(log => {
-          const data = Buffer.from(JSON.stringify(log, undefined, 2));
+        .then((logData: any) => {
+          const data = Buffer.from(JSON.stringify(logData, undefined, 2));
           fs.writeAsync(fd, data, 0, data.byteLength, 0)
             .then(() => fs.closeAsync(fd))
             .then(() => {
@@ -1007,7 +1007,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 }
 
-function mapDispatchToProps(dispatch: ThunkDispatch<types.IState, null, Redux.Action>): IActionProps {
+function mapDispatchToProps(
+    dispatch: ThunkDispatch<types.IState, null, Redux.Action>): IActionProps {
   return {
     onShowActivity: (message: string, id?: string) =>
       util.showActivity(dispatch, message, id),
