@@ -20,12 +20,10 @@
     "copyfiles": "^2.1.1",
     "cross-fetch": "^3.0.1",
     "react-bootstrap": "^0.32.1",
+    "redux": "^4.0.0",
     "tmp": "^0.0.31",
     "ts-loader": "^5.3.3",
     "vortex-api": "Nexus-Mods/Vortex-api#electron7",
     "webpack": "^4.29.6"
-  },
-  "dependencies": {
-    "redux": "^4.0.0"
   }
 }
