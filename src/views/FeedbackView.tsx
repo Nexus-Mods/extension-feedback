@@ -98,7 +98,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     });
 }
 
-  public componentWillMount() {
+  public componentDidMount() {
     fs.readFileAsync(path.join(__dirname, 'issues.json'), { encoding: 'utf-8' })
       .then(data => {
         this.issues = JSON.parse(data);
@@ -108,7 +108,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       });
   }
 
-  public componentWillReceiveProps(newProps: IProps) {
+  public UNSAFE_componentWillReceiveProps(newProps: IProps) {
     if (this.props.feedbackType !== newProps.feedbackType) {
       this.nextState.feedbackType = newProps.feedbackType;
     }
@@ -559,7 +559,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       return {
         valid: false,
         text: t('The title needs to be at least {{minLength}} characters',
-          { replace: { minLength: FeedbackPage.MIN_TITLE_LENGTH } })
+          { replace: { minLength: FeedbackPage.MIN_TITLE_LENGTH } }),
       };
     }
 
@@ -627,9 +627,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
   private tagName(type: string) {
     return {
-      'wiki': 'Wiki',
-      'faq': 'FAQ',
-      'issue': 'Tracker',
+      wiki: 'Wiki',
+      faq: 'FAQ',
+      issue: 'Tracker',
     }[type] || '???';
   }
 
@@ -665,9 +665,10 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           debounceTimer={50}
         />
         {(filteredIssues.length > 0) && titleFocused ? (
-        <div className='feedback-search-result'>
-          {filteredIssues.map(this.renderSearchResult)}
-        </div>) : null}
+          <div className='feedback-search-result'>
+            {filteredIssues.map(this.renderSearchResult)}
+          </div>
+        ) : null}
         {(validationMessage === undefined) ? null : (
           <ControlLabel>
             {validationMessage.text}
@@ -845,8 +846,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       postfix: '.json',
     }, (err, tmpPath: string, fd: number, cleanup: () => void) => {
       (util as any).getReduxLog()
-        .then(log => {
-          const data = Buffer.from(JSON.stringify(log, undefined, 2));
+        .then(reduxLog => {
+          const data = Buffer.from(JSON.stringify(reduxLog, undefined, 2));
           fs.writeAsync(fd, data, 0, data.byteLength, 0)
             .then(() => fs.closeAsync(fd))
             .then(() => {
