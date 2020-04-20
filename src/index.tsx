@@ -68,16 +68,16 @@ function recognisedError(crashDumps: string[]): Promise<ErrorType> {
     fs.readFileAsync(dumpPath + '.log', { encoding: 'utf-8' })
     .then(data => {
       try {
-        const codeLine = data.split('\r\n').filter(line => line.startsWith('Exception code'));
+        const codeLine: string[] = data.split('\r\n').filter(line => line.startsWith('Exception code'));
         return Promise.resolve(codeLine.map(line => line.split(': ')[1]));
       } catch (err) {
         return Promise.reject(new Error('Failed to parse'));
       }
     })
     .catch(() => null))
-  .filter(codes => !!codes)
+  .filter((codes: string) => !!codes)
   .reduce((prev, codes) => prev.concat(codes), [])
-  .filter(code => {
+  .filter((code: string) => {
     const known = KNOWN_ERRORS[code];
     if (known === undefined) {
       return false;
