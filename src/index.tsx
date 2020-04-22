@@ -5,10 +5,11 @@ import { IFeedbackFile } from './types/IFeedbackFile';
 
 import FeedbackView from './views/FeedbackView';
 
-import * as Promise from 'bluebird';
+import Promise from 'bluebird';
 import { remote } from 'electron';
 import * as path from 'path';
 import { fs, log, types } from 'vortex-api';
+import * as winapiT from 'winapi-bindings';
 
 const WHITESCREEN_THREAD =
   'https://forums.nexusmods.com/index.php?/topic/7151166-whitescreen-reasons/';
@@ -25,16 +26,33 @@ function findCrashDumps() {
 enum ErrorType {
   CLR,
   OOM,
+  APP,
 }
 
 const KNOWN_ERRORS = {
-  // tslint:disable-next-line: object-literal-key-quotes
-  'e0434f4d': ErrorType.CLR,
-  // tslint:disable-next-line: object-literal-key-quotes
-  'e0000008': ErrorType.OOM,
+  e0000001: ErrorType.APP,
+  e0000002: ErrorType.APP,
+  e0434f4d: ErrorType.CLR,
+  e0000008: ErrorType.OOM,
 };
 
+function oldMSXMLLoaded() {
+  const winapi: typeof winapiT = require('winapi-bindings');
+  const reMatch = /msxml[56].dll/;
+  const msxml = winapi.GetModuleList(null).find(mod => mod.module.match(reMatch));
+  return msxml !== undefined;
+}
+
 function errorText(type: ErrorType): string {
+  if (type === ErrorType.APP) {
+    // right now we only get here if the msxml file is loaded, if we ever find other common
+    // causes of these extensions we need to differentiate here
+    return 'This exception seems to be caused by a bug in a dll that got shipped with old '
+         + 'versions of MS Office. '
+         + 'It should be safe to ignore it but if you want to get rid of the message you '
+         + 'should check for updates to Office.';
+  }
+
   switch (type) {
     case ErrorType.CLR: return 'The exception you got indicates that the installation of the '
       + '.Net Framework installed on your system is invalid. '
@@ -50,16 +68,25 @@ function recognisedError(crashDumps: string[]): Promise<ErrorType> {
     fs.readFileAsync(dumpPath + '.log', { encoding: 'utf-8' })
     .then(data => {
       try {
-        const codeLine = data.split('\r\n').filter(line => line.startsWith('Exception code'));
+        const codeLine: string[] = data.split('\r\n').filter(line => line.startsWith('Exception code'));
         return Promise.resolve(codeLine.map(line => line.split(': ')[1]));
       } catch (err) {
         return Promise.reject(new Error('Failed to parse'));
       }
     })
     .catch(() => null))
-  .filter(codes => !!codes)
+  .filter((codes: string) => !!codes)
   .reduce((prev, codes) => prev.concat(codes), [])
-  .filter(code => KNOWN_ERRORS[code] !== undefined)
+  .filter((code: string) => {
+    const known = KNOWN_ERRORS[code];
+    if (known === undefined) {
+      return false;
+    }
+    if (known === ErrorType.APP) {
+      return oldMSXMLLoaded();
+    }
+    return true;
+  })
   .then(codes => codes.length > 0 ? KNOWN_ERRORS[codes[0]] : undefined);
 }
 

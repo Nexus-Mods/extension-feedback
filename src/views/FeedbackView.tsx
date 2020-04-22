@@ -2,7 +2,7 @@ import { addFeedbackFile, clearFeedbackFiles, removeFeedbackFile } from '../acti
 import { FeedbackTopic, FeedbackType } from '../types/feedbackTypes';
 import { IFeedbackFile } from '../types/IFeedbackFile';
 
-import * as Promise from 'bluebird';
+import Promise from 'bluebird';
 import { remote } from 'electron';
 import { partial_ratio } from 'fuzzball';
 import * as os from 'os';
@@ -98,7 +98,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     });
 }
 
-  public componentWillMount() {
+  public componentDidMount() {
     fs.readFileAsync(path.join(__dirname, 'issues.json'), { encoding: 'utf-8' })
       .then(data => {
         this.issues = JSON.parse(data);
@@ -108,7 +108,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       });
   }
 
-  public componentWillReceiveProps(newProps: IProps) {
+  public UNSAFE_componentWillReceiveProps(newProps: IProps) {
     if (this.props.feedbackType !== newProps.feedbackType) {
       this.nextState.feedbackType = newProps.feedbackType;
     }
@@ -665,9 +665,10 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           debounceTimer={50}
         />
         {(filteredIssues.length > 0) && titleFocused ? (
-        <div className='feedback-search-result'>
-          {filteredIssues.map(this.renderSearchResult)}
-        </div>) : null}
+          <div className='feedback-search-result'>
+            {filteredIssues.map(this.renderSearchResult)}
+          </div>
+        ) : null}
         {(validationMessage === undefined) ? null : (
           <ControlLabel>
             {validationMessage.text}
