@@ -8,19 +8,35 @@ import FeedbackView from './views/FeedbackView';
 import Promise from 'bluebird';
 import { remote } from 'electron';
 import * as path from 'path';
-import { fs, log, types } from 'vortex-api';
+import { fs, log, types, util } from 'vortex-api';
 import * as winapiT from 'winapi-bindings';
 
 const WHITESCREEN_THREAD =
   'https://forums.nexusmods.com/index.php?/topic/7151166-whitescreen-reasons/';
 
-function findCrashDumps() {
+function originalUserData() {
+  if (process.platform === 'win32') {
+    return path.join(process.env.APPDATA, remote.app.getName());
+  } else {
+    return remote.app.getPath('userData');
+  }
+}
+
+function findCrashDumps(): Promise<string[]> {
   const nativeCrashesPath = path.join(remote.app.getPath('userData'), 'temp', 'dumps');
+  const electronCrashesPath = path.join(originalUserData(), 'temp', 'Vortex Crashes', 'reports');
 
   return fs.ensureDirAsync(nativeCrashesPath)
     .then(() => fs.readdirAsync(nativeCrashesPath))
     .filter((filePath: string) => path.extname(filePath) === '.dmp')
-    .map((iterPath: string) => path.join(nativeCrashesPath, iterPath));
+    .map((iterPath: string) => path.join(nativeCrashesPath, iterPath))
+    .then((nativeCrashes: string[]) =>
+      fs.readdirAsync(electronCrashesPath)
+        .filter((filePath: string) => path.extname(filePath) === '.dmp')
+        .map((iterPath: string) => path.join(electronCrashesPath, iterPath))
+        .then((electronPaths: string[]) =>
+          [].concat(nativeCrashes, electronPaths)))
+    ;
 }
 
 enum ErrorType {
@@ -103,33 +119,26 @@ function reportKnownError(api: types.IExtensionApi, dismiss: () => void, errType
 }
 
 function sendCrashFeedback(api: types.IExtensionApi, dismiss: () => void, crashDumps: string[]) {
-  return Promise.map(crashDumps,
+  api.store.dispatch(setFeedbackType('bugreport', 'crash'));
+  return Promise.map(crashDumps.reduce((prev, iter) => prev.concat(iter, iter + '.log'), []),
     dump => fs.statAsync(dump)
       .then(stats => ({ filePath: dump, stats }))
       // This shouldn't happen unless the user deleted the
       //  crashdump before hitting the Send Report button.
       //  Either way the application shouldn't crash; keep going.
       .catch(err => err.code === 'ENOENT' ? undefined : Promise.reject(err)))
+    .filter(iter => iter !== undefined)
     .each((iter: { filePath: string, stats: fs.Stats }) => {
-      api.store.dispatch(setFeedbackType('bugreport', 'crash'));
-      if (iter !== undefined) {
-        api.store.dispatch(addFeedbackFile({
-          filename: path.basename(iter.filePath),
-          filePath: iter.filePath,
-          size: iter.stats.size,
-          type: 'Dump',
-        }));
-        api.store.dispatch(addFeedbackFile({
-          filename: path.basename(iter.filePath) + '.log',
-          filePath: iter.filePath + '.log',
-          size: iter.stats.size,
-          type: 'Dump',
-        }));
-      }
+      api.store.dispatch(addFeedbackFile({
+        filename: path.basename(iter.filePath),
+        filePath: iter.filePath,
+        size: iter.stats.size,
+        type: 'Dump',
+      }));
     })
     // Do we actually want to report an issue with the native
     //  crash dumps at this point? Or should we just keep going ?
-    .catch(err => undefined)
+    .catch(() => undefined)
     .then(() => {
       api.events.emit('show-main-page', 'Feedback');
       dismiss();
