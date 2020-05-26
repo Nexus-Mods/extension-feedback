@@ -198,6 +198,13 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
               </FlexLayout.Fixed>
             </FlexLayout>
           </FlexLayout.Fixed>
+          <FlexLayout.Fixed>
+            <Alert bsStyle='warning'>
+              {t('Please understand that this is only for feedback for the ' +
+                 '"Vortex" application, all feedback regarding the website ' +
+                 '"Nexus Mods" will be ignored.')}
+            </Alert>
+          </FlexLayout.Fixed>
         </FlexLayout>
       </MainPage>
     );
@@ -888,6 +895,87 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private submitFeedback = (event) => {
+    const { onShowError } = this.props;
+    this.sanityCheckFeedback()
+    .then(() => this.doSubmitFeedback())
+    .catch(util.UserCanceled, () => null)
+    .catch(util.ProcessCanceled, () => null)
+    .catch(err => {
+      onShowError('Failed to send feedback', err, undefined, false);
+    });
+  }
+
+  private sanityCheckFeedback(): Promise<void> {
+    const { feedbackFiles } = this.props;
+    const {
+      feedbackMessage, feedbackTopic, feedbackTitle, feedbackType,
+    } = this.state;
+    let sane = Promise.resolve();
+
+    const logFile = Object.values(feedbackFiles)
+      .find(file => file.type === 'log');
+
+    if (feedbackType === 'bugreport' && logFile === undefined) {
+      sane = sane.then(() =>
+        this.context.api.showDialog('question', 'Bugreport without log file', {
+          text:
+            'You are about to submit a bug report without a log file. ' +
+            'Such reports are almost never enough for identifying the problem. ' +
+            'Due to the high volume of feedback we get we can not ' +
+            'follow up on reports missing such basic information. ' +
+            "If you proceed, please don't be surprised if you don't " +
+            'hear back from us.',
+        }, [
+          { label: 'Cancel' },
+          { label: 'Continue without log' },
+          { label: 'Send with log' },
+        ])
+        .then(result => {
+          if (result.action === 'Cancel') {
+            return Promise.reject(new util.UserCanceled());
+          } else if (result.action === 'Send with log') {
+            this.attachLog();
+          }
+          return Promise.resolve();
+        }));
+    }
+
+    if (feedbackType === 'bugreport' && feedbackTopic === 'slow_downloads') {
+      sane = sane.then(() =>
+        this.context.api.showDialog('question', 'Slow downloads', {
+          text:
+            'You may have overlooked the big red warning where we explain ' +
+            'that slow downloads aren\'t usually (never so far) caused by ' +
+            'the client.\n' +
+            'Your report is almost certainly going to be ignored ' +
+            'unless you have convincing evidence that your case ' +
+            'is actually caused by a bug Vortex.\n' +
+            'We do *not* provide assistance for finding the reason for slow ' +
+            'downloads.\n' +
+            'Thank you for your understanding.',
+          checkboxes: [
+            { id: 'sure', text: 'Yes, I\'m sure', value: false },
+          ],
+        }, [
+          { label: 'Cancel' },
+          { label: 'Abort' },
+          { label: 'Stop' },
+          { label: 'Proceed' },
+          { label: 'Reconsider' },
+        ])
+        .then(result => {
+          if ((result.action !== 'Proceed') || !result.input.sure) {
+            return Promise.reject(new util.UserCanceled());
+          } else {
+            return Promise.resolve();
+          }
+        }));
+    }
+
+    return sane;
+  }
+
+  private doSubmitFeedback() {
     const { APIKey, feedbackFiles, feedbackHash, onClearFeedbackFiles,
             onDismissNotification, onShowActivity, onShowDialog, onShowError } = this.props;
     const { anonymous, feedbackType, feedbackTopic, feedbackTitle, feedbackMessage } = this.state;
