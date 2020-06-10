@@ -15,7 +15,8 @@ const WHITESCREEN_THREAD =
   'https://forums.nexusmods.com/index.php?/topic/7151166-whitescreen-reasons/';
 
 function originalUserData() {
-  if (process.platform === 'win32') {
+  if ((process.platform === 'win32')
+      && (process.env.APPDATA !== undefined)) {
     return path.join(process.env.APPDATA, remote.app.getName());
   } else {
     return remote.app.getPath('userData');
