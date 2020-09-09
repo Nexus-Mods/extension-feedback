@@ -640,9 +640,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     }[type] || '???';
   }
 
-  private renderSearchResult = (iss: any) => {
+  private renderSearchResult = (iss: any, idx: number) => {
     return (
-      <div key={iss.title}>
+      <div key={`${iss.title}-${idx}`}>
         <div className='feedback-result-tag'>
           {this.tagName(iss.type)}
         </div>
@@ -673,7 +673,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
         />
         {(filteredIssues.length > 0) && titleFocused ? (
           <div className='feedback-search-result'>
-            {filteredIssues.map(this.renderSearchResult)}
+            {filteredIssues.map((issue, idx) => this.renderSearchResult(issue, idx))}
           </div>
         ) : null}
         {(validationMessage === undefined) ? null : (
