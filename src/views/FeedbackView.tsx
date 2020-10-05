@@ -156,7 +156,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       <MainPage>
         <FlexLayout type='column' className='feedback-type-selection'>
           <FlexLayout.Fixed>
-            {t('Please select the type of feedback you\'d like to send in.')}
+            {t('Please select the type of Feedback you\'d like to send in.')}
           </FlexLayout.Fixed>
           <FlexLayout.Fixed>
             <FlexLayout type='row'>
