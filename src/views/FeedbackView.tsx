@@ -923,8 +923,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
             'Such reports are almost never enough for identifying the problem. ' +
             'Due to the high volume of feedback we get we can not ' +
             'follow up on reports missing such basic information. ' +
-            "If you proceed, please don't be surprised if you don't " +
-            'hear back from us.',
+            'If you proceed, please understand that we may overlook your report ' +
+            'if we can\'t tell what went wrong from the error message alone.',
         }, [
           { label: 'Cancel' },
           { label: 'Continue without log' },
