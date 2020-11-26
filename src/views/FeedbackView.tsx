@@ -917,23 +917,25 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
     if (feedbackType === 'bugreport' && logFile === undefined) {
       sane = sane.then(() =>
-        this.context.api.showDialog('question', 'Bugreport without log file', {
-          text:
-            'You are about to submit a bug report without a log file. ' +
-            'Such reports are almost never enough for identifying the problem. ' +
-            'Due to the high volume of feedback we get we can not ' +
-            'follow up on reports missing such basic information. ' +
-            'If you proceed, please understand that we may overlook your report ' +
-            'if we can\'t tell what went wrong from the error message alone.',
+        this.context.api.showDialog('question', 'Log file is not attached', {
+          text: 'You are about to submit a bug report without including your '
+              + 'Vortex log file. In order for us to properly investigate the '
+              + 'issue you are reporting we may need to see the messages written '
+              + 'to that log when the problem occurred.\n\n '
+              + 'If you choose not to include your log file, we may not have '
+              + 'enough information to help you further. Due to the volume of '
+              + 'feedback we receive, our team prioritises reports that include '
+              + 'the most relevant information.\n\n '
+              + 'Would you like to include your log file with this report?',
         }, [
           { label: 'Cancel' },
-          { label: 'Continue without log' },
-          { label: 'Send with log' },
+          { label: 'No' },
+          { label: 'Yes' },
         ])
         .then(result => {
           if (result.action === 'Cancel') {
             return Promise.reject(new util.UserCanceled());
-          } else if (result.action === 'Send with log') {
+          } else if (result.action === 'Yes') {
             this.attachLog();
           }
           return Promise.resolve();
