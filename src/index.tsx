@@ -215,6 +215,8 @@ function nativeCrashCheck(api: types.IExtensionApi): Promise<void> {
 }
 
 function init(context: types.IExtensionContext) {
+  context.registerReducer(['session', 'feedback'], sessionReducer);
+
   context.registerMainPage('', 'Feedback', FeedbackView, {
     hotkey: 'F',
     group: 'hidden',
@@ -222,8 +224,6 @@ function init(context: types.IExtensionContext) {
 
   context.registerAction('global-icons', 100, 'feedback', {}, 'Send Feedback', () =>
     context.api.events.emit('show-main-page', 'Feedback'));
-
-  context.registerReducer(['session', 'feedback'], sessionReducer);
 
   context.once(() => {
     context.api.setStylesheet('feedback', path.join(__dirname, 'feedback.scss'));
