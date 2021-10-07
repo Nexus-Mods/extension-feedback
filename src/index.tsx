@@ -6,7 +6,6 @@ import { IFeedbackFile } from './types/IFeedbackFile';
 import FeedbackView from './views/FeedbackView';
 
 import Promise from 'bluebird';
-import { remote } from 'electron';
 import * as path from 'path';
 import { fs, log, types, util } from 'vortex-api';
 import * as winapiT from 'winapi-bindings';
@@ -17,14 +16,14 @@ const WHITESCREEN_THREAD =
 function originalUserData() {
   if ((process.platform === 'win32')
       && (process.env.APPDATA !== undefined)) {
-    return path.join(process.env.APPDATA, remote.app.getName());
+    return path.join(process.env.APPDATA, util['getApplication']().name);
   } else {
-    return remote.app.getPath('userData');
+    return util.getVortexPath('userData');
   }
 }
 
 function findCrashDumps(): Promise<string[]> {
-  const nativeCrashesPath = path.join(remote.app.getPath('userData'), 'temp', 'dumps');
+  const nativeCrashesPath = path.join(util.getVortexPath('userData'), 'temp', 'dumps');
   const electronCrashesPath = path.join(originalUserData(), 'temp', 'Vortex Crashes', 'reports');
 
   return fs.ensureDirAsync(nativeCrashesPath)
