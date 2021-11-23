@@ -628,7 +628,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     // delay a bit, otherwise the links can't be clicked
     setTimeout(() => {
       this.nextState.titleFocused = focused;
-    }, 100);
+    }, focused ? 100 : 1000);
   }
 
   private tagName(type: string) {
@@ -646,9 +646,14 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           {this.tagName(iss.type)}
         </div>
         {' '}
-        <a href={iss.url}>{iss.title}</a>
+        <a data-url={iss.url} onClick={this.openIssue}>{iss.title}</a>
       </div>
     );
+  }
+
+  private openIssue = (evt) => {
+    const url = evt.currentTarget.getAttribute('data-url');
+    util.opn(url).catch(() => null);
   }
 
   private renderTitleInput = (validationMessage: { valid: boolean, text: string }) => {

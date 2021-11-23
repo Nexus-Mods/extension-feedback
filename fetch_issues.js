@@ -57,10 +57,15 @@ function transformIssue(issue, keywords) {
   };
 }
 
+function makeUniqueByKey(input, key) {
+  return Object.values(input.reduce((prev, item) => { prev[key(item)] = item; return prev; }, {}));
+}
+
 async function main() {
   const keywords = JSON.parse(await fs.readFile('keywords.json'));
-  const wiki = (await fetchWikiCategory('Vortex'))
-    .map(w => transformWikiPages(w, keywords));
+  const wiki = makeUniqueByKey((await fetchWikiCategory('Vortex'))
+    .map(w => transformWikiPages(w, keywords)),
+    w => w.title);
   const faq = (await fetchFAQ())
     .map(f => transformFAQ(f, keywords));
   const issues = (await fetchIssues())

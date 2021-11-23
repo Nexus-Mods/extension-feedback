@@ -18,6 +18,12 @@
   },
   {
     "type": "wiki",
+    "title": "Beta Builds",
+    "url": "https://wiki.nexusmods.com/index.php/Beta_Builds",
+    "keywords": []
+  },
+  {
+    "type": "wiki",
     "title": "Category Management",
     "url": "https://wiki.nexusmods.com/index.php/Category_Management",
     "keywords": []
@@ -190,6 +196,12 @@
   },
   {
     "type": "wiki",
+    "title": "Modding Cyberpunk 2077 with Vortex",
+    "url": "https://wiki.nexusmods.com/index.php/Modding_Cyberpunk_2077_with_Vortex",
+    "keywords": []
+  },
+  {
+    "type": "wiki",
     "title": "Modding Devil May Cry 5 with Vortex",
     "url": "https://wiki.nexusmods.com/index.php/Modding_Devil_May_Cry_5_with_Vortex",
     "keywords": []
@@ -204,6 +216,12 @@
     "type": "wiki",
     "title": "Modding Kenshi with Vortex",
     "url": "https://wiki.nexusmods.com/index.php/Modding_Kenshi_with_Vortex",
+    "keywords": []
+  },
+  {
+    "type": "wiki",
+    "title": "Modding Microsoft Flight Simulator with Vortex",
+    "url": "https://wiki.nexusmods.com/index.php/Modding_Microsoft_Flight_Simulator_with_Vortex",
     "keywords": []
   },
   {
@@ -364,17 +382,27 @@
   },
   {
     "type": "wiki",
-    "title": "Vortex vs. Nexus Mod Manager",
-    "url": "https://wiki.nexusmods.com/index.php/Vortex_vs._Nexus_Mod_Manager",
+    "title": "Using Vortex to launch a GOG game with Steam controller",
+    "url": "https://wiki.nexusmods.com/index.php/Using_Vortex_to_launch_a_GOG_game_with_Steam_controller",
     "keywords": []
   },
   {
     "type": "wiki",
-    "title": "Adding a new game to Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Adding_a_new_game_to_Vortex",
-    "keywords": [
-      "discover"
-    ]
+    "title": "Vortex API Events",
+    "url": "https://wiki.nexusmods.com/index.php/Vortex_API_Events",
+    "keywords": []
+  },
+  {
+    "type": "wiki",
+    "title": "Vortex Update FAQ",
+    "url": "https://wiki.nexusmods.com/index.php/Vortex_Update_FAQ",
+    "keywords": []
+  },
+  {
+    "type": "wiki",
+    "title": "Vortex vs. Nexus Mod Manager",
+    "url": "https://wiki.nexusmods.com/index.php/Vortex_vs._Nexus_Mod_Manager",
+    "keywords": []
   },
   {
     "type": "wiki",
@@ -384,50 +412,8 @@
   },
   {
     "type": "wiki",
-    "title": "Category Management",
-    "url": "https://wiki.nexusmods.com/index.php/Category_Management",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Choosing Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Choosing_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
     "title": "Creating a mod",
     "url": "https://wiki.nexusmods.com/index.php/Creating_a_mod",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Difference between Groups and Categories",
-    "url": "https://wiki.nexusmods.com/index.php/Difference_between_Groups_and_Categories",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Downloading from Nexus Mods with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Downloading_from_Nexus_Mods_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "File Conflicts: Nexus Mod Manager vs Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/File_Conflicts:_Nexus_Mod_Manager_vs_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Frequently Asked Questions",
-    "url": "https://wiki.nexusmods.com/index.php/Frequently_Asked_Questions",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Importing mods from NMM",
-    "url": "https://wiki.nexusmods.com/index.php/Importing_mods_from_NMM",
     "keywords": []
   },
   {
@@ -450,199 +436,14 @@
   },
   {
     "type": "wiki",
-    "title": "Logging in via Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Logging_in_via_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding 7 Days To Die with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_7_Days_To_Die_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding A Hat In Time with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_A_Hat_In_Time_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding Bannerlord with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_Bannerlord_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding Blade & Sorcery with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_Blade_&_Sorcery_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding Devil May Cry 5 with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_Devil_May_Cry_5_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding Halo: The Master Chief Collection with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_Halo:_The_Master_Chief_Collection_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding Kenshi with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_Kenshi_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding Monster Hunter: World with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_Monster_Hunter:_World_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding Sekiro with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_Sekiro_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding Skyrim Special Edition with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_Skyrim_Special_Edition_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding Stardew Valley with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_Stardew_Valley_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding Subnautica with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_Subnautica_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding The Sims 4 with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_The_Sims_4_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Modding The Witcher 3 with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_The_Witcher_3_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
     "title": "Modding Tools Overview",
     "url": "https://wiki.nexusmods.com/index.php/Modding_Tools_Overview",
     "keywords": []
   },
   {
     "type": "wiki",
-    "title": "Modding X4: Foundations with Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Modding_X4:_Foundations_with_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
     "title": "Setting up Database",
     "url": "https://wiki.nexusmods.com/index.php/Setting_up_Database",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Setting up profiles in Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Setting_up_profiles_in_Vortex",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Tool Setup: BodySlide and Outfit Studio",
-    "url": "https://wiki.nexusmods.com/index.php/Tool_Setup:_BodySlide_and_Outfit_Studio",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Tool Setup: ENB",
-    "url": "https://wiki.nexusmods.com/index.php/Tool_Setup:_ENB",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Tool Setup: FNIS",
-    "url": "https://wiki.nexusmods.com/index.php/Tool_Setup:_FNIS",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Tool Setup: Merge Plugins",
-    "url": "https://wiki.nexusmods.com/index.php/Tool_Setup:_Merge_Plugins",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Tool Setup: Script Extenders",
-    "url": "https://wiki.nexusmods.com/index.php/Tool_Setup:_Script_Extenders",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Tool Setup: Witcher 3 Script Merger",
-    "url": "https://wiki.nexusmods.com/index.php/Tool_Setup:_Witcher_3_Script_Merger",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Tool Setup: xEdit",
-    "url": "https://wiki.nexusmods.com/index.php/Tool_Setup:_xEdit",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Tool Setup: zEdit",
-    "url": "https://wiki.nexusmods.com/index.php/Tool_Setup:_zEdit",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Creating themes for Vortex",
-    "url": "https://wiki.nexusmods.com/index.php/Creating_themes_for_Vortex",
-    "keywords": [
-      "look",
-      "font",
-      "style",
-      "readable"
-    ]
-  },
-  {
-    "type": "wiki",
-    "title": "Keyboard Shortcuts",
-    "url": "https://wiki.nexusmods.com/index.php/Keyboard_Shortcuts",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "Managing Save Games",
-    "url": "https://wiki.nexusmods.com/index.php/Managing_Save_Games",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "User Interface Overview",
-    "url": "https://wiki.nexusmods.com/index.php/User_Interface_Overview",
-    "keywords": []
-  },
-  {
-    "type": "wiki",
-    "title": "User Interface: Icons",
-    "url": "https://wiki.nexusmods.com/index.php/User_Interface:_Icons",
     "keywords": []
   },
   {
