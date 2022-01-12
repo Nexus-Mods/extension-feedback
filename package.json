@@ -4,13 +4,12 @@
   "description": "Feedback page",
   "main": "./out/index.js",
   "scripts": {
-    "webpack": "node ./node_modules/webpack/bin/webpack --config webpack.config.js --display-error-details --progress --profile --color",
+    "webpack": "node ./node_modules/webpack/bin/webpack --config webpack.config.js --progress --profile --color",
     "build": "npm run webpack && extractInfo && copyfiles -f src/stylesheets/feedback.scss dist && copyfiles -f issues.json dist"
   },
   "author": "Black Tree Gaming Ltd.",
   "license": "GPL-3.0",
   "devDependencies": {
-    "@types/i18next": "^8.4.0",
     "@types/react": "16.0.34",
     "@types/react-bootstrap": "^0.0.37",
     "@types/react-redux": "4.4.35",
@@ -22,9 +21,9 @@
     "react-bootstrap": "^0.32.1",
     "redux": "^4.0.0",
     "tmp": "^0.0.31",
-    "ts-loader": "^5.3.3",
+    "ts-loader": "^9.2.6",
     "vortex-api": "Nexus-Mods/vortex-api",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.3.11"
+    "webpack": "^5.66.0",
+    "webpack-cli": "^4.9.1"
   }
 }
