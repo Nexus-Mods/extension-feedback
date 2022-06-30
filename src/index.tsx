@@ -71,7 +71,7 @@ function errorText(type: ErrorType): string {
 
   switch (type) {
     case ErrorType.CLR: return 'The exception you got indicates that the installation of the '
-      + '.Net Framework installed on your system is invalid. '
+      + '.NET Framework installed on your system is invalid. '
       + 'This should be easily solved by reinstalling it.';
     case ErrorType.OOM: return 'The exception you got indicates an out of memory situation. '
       + 'This can have different reasons, most commonly a system misconfiguration where it '
