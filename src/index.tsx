@@ -24,14 +24,17 @@ function originalUserData() {
 
 function findCrashDumps(): Promise<string[]> {
   const nativeCrashesPath = path.join(util.getVortexPath('userData'), 'temp', 'dumps');
+  // this directory isn't even actually used?
   const electronCrashesPath = path.join(originalUserData(), 'temp', 'Vortex Crashes', 'reports');
 
   return fs.ensureDirAsync(nativeCrashesPath)
     .then(() => fs.readdirAsync(nativeCrashesPath))
+    .catch(() => [])
     .filter((filePath: string) => path.extname(filePath) === '.dmp')
     .map((iterPath: string) => path.join(nativeCrashesPath, iterPath))
     .then((nativeCrashes: string[]) =>
       fs.readdirAsync(electronCrashesPath)
+        .catch(() => [])
         .filter((filePath: string) => path.extname(filePath) === '.dmp')
         .map((iterPath: string) => path.join(electronCrashesPath, iterPath))
         .then((electronPaths: string[]) =>
