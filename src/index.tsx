@@ -7,6 +7,7 @@ import FeedbackView from './views/FeedbackView';
 
 import Promise from 'bluebird';
 import * as path from 'path';
+import * as tmp from 'tmp';
 import { fs, log, types, util } from 'vortex-api';
 import * as winapiT from 'winapi-bindings';
 
@@ -216,12 +217,100 @@ function nativeCrashCheck(api: types.IExtensionApi): Promise<void> {
         });
 }
 
+function readReferenceIssues() {
+  return fs.readFileAsync(path.join(__dirname, 'issues.json'), { encoding: 'utf-8' })
+    .then(data => {
+      return JSON.parse(data);
+    });
+}
+
+function identifyAttachment(filePath: string, type?: string): Promise<IFeedbackFile> {
+  return fs.statAsync(filePath)
+    .then(stats => ({
+      filename: path.basename(filePath),
+      filePath,
+      size: stats.size,
+      type: type || path.extname(filePath).slice(1),
+    }));
+}
+
+function logPath(fileName: string): string {
+  return path.join(util.getVortexPath('userData'), fileName);
+}
+
+function dumpStateToFile(stateKey: string, name: string): Promise<IFeedbackFile> {
+  return new Promise<IFeedbackFile>((resolve, reject) => {
+    const data: Buffer = Buffer.from(JSON.stringify(this.context.api.store.getState()[stateKey]));
+    tmp.file({
+      prefix: `${stateKey}-`,
+      postfix: '.json',
+    }, (err, tmpPath: string, fd: number) => {
+      if (err !== null) {
+        return reject(err);
+      }
+
+      fs.writeAsync(fd, data, 0, data.byteLength, 0)
+        .then(() => fs.closeAsync(fd))
+        .then(() => {
+          resolve({
+            filename: name,
+            filePath: tmpPath,
+            size: data.byteLength,
+            type: 'State',
+          });
+        })
+        .catch(reject);
+    });
+  });
+}
+
+function dumpReduxActionsToFile(name: string): Promise<IFeedbackFile> {
+  return new Promise<IFeedbackFile>((resolve, reject) => {
+    tmp.file({
+      prefix: 'events-',
+      postfix: '.json',
+    }, (err, tmpPath: string, fd: number) => {
+      if (err !== null) {
+        return reject(err);
+      }
+      util.getReduxLog()
+        .then((logData: any) => {
+          const data = Buffer.from(JSON.stringify(logData, undefined, 2));
+          fs.writeAsync(fd, data, 0, data.byteLength, 0)
+            .then(() => fs.closeAsync(fd))
+            .then(() => {
+              resolve({
+                filename: name,
+                filePath: tmpPath,
+                size: data.byteLength,
+                type: 'State',
+              });
+            })
+            .catch(reject);
+        });
+    });
+  });
+}
+
+function removeFiles(fileNames: string[]): Promise<void> {
+  return Promise.all(fileNames.map(removeFile => fs.removeAsync(removeFile)))
+    .then(() => null);
+}
+
 function init(context: types.IExtensionContext) {
   context.registerReducer(['session', 'feedback'], sessionReducer);
 
   context.registerMainPage('', 'Feedback', FeedbackView, {
     hotkey: 'F',
     group: 'hidden',
+    props: () => ({
+      readReferenceIssues,
+      identifyAttachment,
+      logPath,
+      dumpStateToFile,
+      dumpReduxActionsToFile,
+      removeFiles,
+    }),
   });
 
   context.registerAction('global-icons', 100, 'feedback', {}, 'Send Feedback', () =>
@@ -242,21 +331,22 @@ function init(context: types.IExtensionContext) {
       });
     });
 
-    context.api.events.on('report-log-error',
-      (logSessionPath: string) => {
-
-        fs.statAsync(logSessionPath)
-          .then((stats) => {
-            const feedbackFile: IFeedbackFile = {
-              filename: path.basename(logSessionPath),
-              filePath: logSessionPath,
-              size: stats.size,
-              type: 'log',
-            };
-            context.api.store.dispatch(addFeedbackFile(feedbackFile));
-          });
-        context.api.events.emit('show-main-page', 'Feedback');
-      });
+    context.api.events.on('report-log-error', (logSessionPath: string) => {
+      fs.statAsync(logSessionPath)
+        .then((stats) => {
+          const feedbackFile: IFeedbackFile = {
+            filename: path.basename(logSessionPath),
+            filePath: logSessionPath,
+            size: stats.size,
+            type: 'log',
+          };
+          context.api.store.dispatch(addFeedbackFile(feedbackFile));
+        })
+        .catch(err => {
+          context.api.showErrorNotification('Failed to attach session log', err);
+        });
+      context.api.events.emit('show-main-page', 'Feedback');
+    });
 
     nativeCrashCheck(context.api);
   });

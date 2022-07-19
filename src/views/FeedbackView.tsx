@@ -1,26 +1,32 @@
 import { addFeedbackFile, clearFeedbackFiles, removeFeedbackFile } from '../actions/session';
-import { FeedbackTopic, FeedbackType } from '../types/feedbackTypes';
-import { IFeedbackFile } from '../types/IFeedbackFile';
+import type { FeedbackTopic, FeedbackType } from '../types/feedbackTypes';
+import type { IFeedbackFile } from '../types/IFeedbackFile';
 
-import Promise from 'bluebird';
 import { partial_ratio } from 'fuzzball';
-import * as os from 'os';
-import * as path from 'path';
 import * as React from 'react';
-import { Alert,
-  ControlLabel, DropdownButton, FormControl, FormGroup, ListGroup, ListGroupItem, MenuItem, Panel,
+import {
+  Alert, ControlLabel, DropdownButton, FormControl,
+  FormGroup, ListGroup, ListGroupItem, MenuItem, Panel,
 } from 'react-bootstrap';
 import { Trans, withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import * as Redux from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
-import { file as tmpFile } from 'tmp';
 import {
-  actions, ComponentEx, Dropzone, EmptyPlaceholder, FlexLayout, FormInput, fs,
+  actions, ComponentEx, Dropzone, EmptyPlaceholder, FlexLayout, FormInput,
   log, MainPage, Toggle, tooltip, types, Usage, util,
 } from 'vortex-api';
 
 type ControlMode = 'urls' | 'files';
+
+interface IFeedbackViewProps {
+  readReferenceIssues: () => Promise<IPreviewIssue[]>;
+  identifyAttachment: (filePath: string, type?: string) => Promise<IFeedbackFile>;
+  logPath: (fileName: string) => string;
+  dumpStateToFile: (stateKey: string, name: string) => Promise<IFeedbackFile>;
+  dumpReduxActionsToFile: (name: string) => Promise<IFeedbackFile>;
+  removeFiles: (fileNames: string[]) => Promise<void>;
+}
 
 interface IConnectedProps {
   feedbackType: FeedbackType;
@@ -45,7 +51,7 @@ interface IActionProps {
   onAddFeedbackFile: (feedbackFile: IFeedbackFile) => void;
 }
 
-type IProps = IConnectedProps & IActionProps;
+type IProps = IFeedbackViewProps & IConnectedProps & IActionProps;
 
 interface IComponentState {
   feedbackType: FeedbackType;
@@ -95,16 +101,16 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       anonymous: false,
       sending: false,
     });
-}
+  }
 
   public componentDidMount() {
-    fs.readFileAsync(path.join(__dirname, 'issues.json'), { encoding: 'utf-8' })
-      .then(data => {
-        this.issues = JSON.parse(data);
-      })
-      .catch(err => {
+    (async () => {
+      try {
+        this.issues = await this.props.readReferenceIssues();
+      } catch (err) {
         log('error', 'failed to read issue preview', err.message);
-      });
+      }
+    })();
   }
 
   public UNSAFE_componentWillReceiveProps(newProps: IProps) {
@@ -301,19 +307,21 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           {t('Describe in detail what you want to suggest.')}
         </h4>
         <Usage persistent infoId='feedback-suggestion-instructions'>
-        <T i18nKey='feedback-instructions' className='feedback-instructions'>
-          Please<br />
-          <ul>
-            <li>check on <a onClick={this.openIssues}>https://github.com/Nexus-Mods/Vortex/issues</a> if your suggestion
-            was already made and vote on existing reports instead of creating new ones. This helps us identify the most popular requests.</li>
-            <li>use punctuation and linebreaks,</li>
-            <li>use English,</li>
-            <li>be precise and to the point. Describe as concisely the feature you'd like,
-              any form of illustration - if applicable - will help,</li>
-            <li>always explain the reason for your suggestion. Don't just state the "what" but also the "why",</li>
-            <li>report only one thing per message</li>
-          </ul>
-        </T>
+          <T i18nKey='feedback-instructions' className='feedback-instructions'>
+            Please<br />
+            <ul>
+              <li>check on <a onClick={this.openIssues}>https://github.com/Nexus-Mods/Vortex/issues</a> if your suggestion
+                was already made and vote on existing reports instead of creating new ones.
+                This helps us identify the most popular requests.</li>
+              <li>use punctuation and linebreaks,</li>
+              <li>use English,</li>
+              <li>be precise and to the point. Describe as concisely the feature you'd like,
+                any form of illustration - if applicable - will help,</li>
+              <li>always explain the reason for your suggestion.
+                Don&apos;t just state the &quot;what&quot; but also the &quot;why&quot;,</li>
+              <li>report only one thing per message</li>
+            </ul>
+          </T>
         </Usage>
       </FlexLayout.Fixed>
       // tslint:enable:max-line-length
@@ -441,14 +449,14 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
               <ul>
                 <li>use punctuation and linebreaks,</li>
                 <li>use English,</li>
-                <li>be precise and to the point. You don't have to form sentences.
+                <li>be precise and to the point. You don&apos;t have to form sentences.
                   A bug report is a technical document, not prose,</li>
                 <li>report only one thing per message,</li>
                 <li>avoid making assumptions or your own conclusions, just report what you saw
                   and what you expected to see,</li>
                 <li>include an example of how to reproduce the error if you can.
-                  Even if its a general problem ("fomods using feature x zig when they should
-                  zag") include one sequence of actions that expose the problem.</li>
+                  Even if its a general problem (&quot;fomods using feature x zig when they should
+                  zag&quot;) include one sequence of actions that expose the problem.</li>
               </ul>
               Trying to reproduce a bug is usually what takes the most amount of time in
               bug fixing and the less time we spend on it, the more time we can spend
@@ -565,7 +573,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       return {
         valid: false,
         text: t('The title needs to be at least {{minLength}} characters',
-          { replace: { minLength: FeedbackPage.MIN_TITLE_LENGTH } }),
+                { replace: { minLength: FeedbackPage.MIN_TITLE_LENGTH } }),
       };
     }
 
@@ -585,25 +593,20 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
     if ((feedbackMessage.length > 0) && (feedbackMessage.length < FeedbackPage.MIN_TEXT_LENGTH)) {
       return t('Please provide a meaningful description of at least {{minLength}} characters',
-              { replace: { minLength: FeedbackPage.MIN_TEXT_LENGTH } });
+               { replace: { minLength: FeedbackPage.MIN_TEXT_LENGTH } });
     }
 
     return undefined;
   }
 
-  private attachFile(filePath: string, type?: string): Promise<void> {
-    return fs.statAsync(filePath)
-      .then(stats => {
-        this.addFeedbackFile({
-          filename: path.basename(filePath),
-          filePath,
-          size: stats.size,
-          type: type || path.extname(filePath).slice(1),
-        });
-      })
-      .catch(err => err.code === 'ENOENT'
-        ? Promise.resolve()
-        : Promise.reject(err));
+  private async attachFile(filePath: string, type?: string): Promise<void> {
+    try {
+      this.addFeedbackFile(await this.props.identifyAttachment(filePath, type));
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        throw err;
+      }
+    }
   }
 
   private dropFeedback = (type: ControlMode, feedbackFilePaths: string[]) => {
@@ -612,9 +615,10 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     }
 
     if (type === 'files') {
-      Promise.map(feedbackFilePaths, filePath => {
+      Promise.all(feedbackFilePaths.map(filePath => {
         this.attachFile(filePath);
-      }).then(() => null);
+      }))
+        .then(() => null);
     }
   }
 
@@ -809,11 +813,11 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       case 'state': {
         onShowDialog('question', t('Confirm'), {
           message:
-          t('This will attach your Vortex state to the report. This includes information about ' +
-            'things like your downloaded and installed mods, games, profiles and categories. ' +
-            'These could be very useful for understanding your feedback but you have ' +
-            'to decide if you are willing to share this information. ' +
-            'We will, of course, treat your information as confidential.'),
+            t('This will attach your Vortex state to the report. This includes information about ' +
+              'things like your downloaded and installed mods, games, profiles and categories. ' +
+              'These could be very useful for understanding your feedback but you have ' +
+              'to decide if you are willing to share this information. ' +
+              'We will, of course, treat your information as confidential.'),
           options: { wrap: true },
         }, [
           { label: 'Cancel' },
@@ -828,61 +832,33 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     return [
       'Vortex Version: ' + util['getApplication']().version,
       'Memory: ' + util.bytesToString((process as any).getSystemMemoryInfo().total * 1024),
-      'System: ' + `${os.platform()} ${process.arch} (${os.release()})`,
+      'System: ' + `${util.getApplication()['platform']} ${process.arch} (${util.getApplication()['platformVersion']})`,
     ].join('\n');
   }
 
-  private attachState(stateKey: string, name: string) {
-    const data: Buffer = Buffer.from(JSON.stringify(this.context.api.store.getState()[stateKey]));
-    tmpFile({
-      prefix: `${stateKey}-`,
-      postfix: '.json',
-    }, (err, tmpPath: string, fd: number, cleanup: () => void) => {
-      fs.writeAsync(fd, data, 0, data.byteLength, 0)
-        .then(() => fs.closeAsync(fd))
-        .then(() => {
-          this.addFeedbackFile({
-            filename: name,
-            filePath: tmpPath,
-            size: data.byteLength,
-            type: 'State',
-          });
-        });
-    });
+  private async attachState(stateKey: string, name: string) {
+    try {
+      this.addFeedbackFile(await this.props.dumpStateToFile(stateKey, name));
+    } catch (err) {
+      this.props.onShowError('Failed to attach state', err);
+    }
   }
 
-  private attachActions(name: string) {
-    tmpFile({
-      prefix: 'events-',
-      postfix: '.json',
-    }, (err, tmpPath: string, fd: number, cleanup: () => void) => {
-      (util as any).getReduxLog()
-        .then((logData: any) => {
-          const data = Buffer.from(JSON.stringify(logData, undefined, 2));
-          fs.writeAsync(fd, data, 0, data.byteLength, 0)
-            .then(() => fs.closeAsync(fd))
-            .then(() => {
-              this.addFeedbackFile({
-                filename: name,
-                filePath: tmpPath,
-                size: data.byteLength,
-                type: 'State',
-              });
-            });
-        });
-    });
+  private async attachActions(name: string) {
+    try {
+      this.addFeedbackFile(await this.props.dumpReduxActionsToFile(name));
+    } catch (err) {
+      this.props.onShowError('Failed to attach redux actions', err);
+    }
   }
 
   private attachNetLog() {
-    this.attachFile(
-      path.join(util.getVortexPath('userData'), 'network.log'), 'log');
+    this.attachFile(this.props.logPath('network.log'), 'log');
   }
 
   private attachLog() {
-    this.attachFile(
-      path.join(util.getVortexPath('userData'), 'vortex.log'), 'log');
-    this.attachFile(
-      path.join(util.getVortexPath('userData'), 'vortex1.log'), 'log');
+    this.attachFile(this.props.logPath('vortex.log'), 'log');
+    this.attachFile(this.props.logPath('vortex1.log'), 'log');
   }
 
   private addFeedbackFile(file: IFeedbackFile) {
@@ -898,21 +874,22 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     }
   }
 
-  private submitFeedback = (event) => {
+  private submitFeedback = () => {
     const { onShowError } = this.props;
     this.sanityCheckFeedback()
-    .then(() => this.doSubmitFeedback())
-    .catch(util.UserCanceled, () => null)
-    .catch(util.ProcessCanceled, () => null)
-    .catch(err => {
-      onShowError('Failed to send feedback', err, undefined, false);
-    });
+      .then(() => this.doSubmitFeedback())
+      .catch(err => {
+        if (!(err instanceof util.UserCanceled)
+            && !(err instanceof util.ProcessCanceled)) {
+          onShowError('Failed to send feedback', err, undefined, false);
+        }
+      });
   }
 
   private sanityCheckFeedback(): Promise<void> {
     const { feedbackFiles } = this.props;
     const {
-      feedbackMessage, feedbackTopic, feedbackTitle, feedbackType,
+      feedbackTopic, feedbackType,
     } = this.state;
     let sane = Promise.resolve();
 
@@ -934,14 +911,14 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           { label: 'Continue without log' },
           { label: 'Send with log' },
         ])
-        .then(result => {
-          if (result.action === 'Cancel') {
-            return Promise.reject(new util.UserCanceled());
-          } else if (result.action === 'Send with log') {
-            this.attachLog();
-          }
-          return Promise.resolve();
-        }));
+          .then(result => {
+            if (result.action === 'Cancel') {
+              return Promise.reject(new util.UserCanceled());
+            } else if (result.action === 'Send with log') {
+              this.attachLog();
+            }
+            return Promise.resolve();
+          }));
     }
 
     if (feedbackType === 'bugreport' && feedbackTopic === 'slow_downloads') {
@@ -967,21 +944,22 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
           { label: 'Proceed' },
           { label: 'Reconsider' },
         ])
-        .then(result => {
-          if ((result.action !== 'Proceed') || !result.input.sure) {
-            return Promise.reject(new util.UserCanceled());
-          } else {
-            return Promise.resolve();
-          }
-        }));
+          .then(result => {
+            if ((result.action !== 'Proceed') || !result.input.sure) {
+              return Promise.reject(new util.UserCanceled());
+            } else {
+              return Promise.resolve();
+            }
+          }));
     }
 
     return sane;
   }
 
   private doSubmitFeedback() {
-    const { APIKey, feedbackFiles, feedbackHash, onClearFeedbackFiles,
-            onDismissNotification, onShowActivity, onShowDialog, onShowError } = this.props;
+    const {
+      APIKey, feedbackFiles, feedbackHash, onClearFeedbackFiles,
+      onDismissNotification, onShowActivity, onShowDialog, onShowError } = this.props;
     const { anonymous, feedbackType, feedbackTopic, feedbackTitle, feedbackMessage } = this.state;
 
     const notificationId = 'submit-feedback';
@@ -1000,53 +978,54 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       title = `${this.renderTopic(feedbackTopic)}: ${title}`;
     }
 
-    this.context.api.events.emit('submit-feedback',
-                                 `${this.renderType(feedbackType)} - ${title}`,
-                                 this.systemInfo() + '\n' + feedbackMessage,
-                                 feedbackHash,
-                                 files,
-                                 sendAnonymously,
-                                 (err: Error) => {
-      this.nextState.sending = false;
-      if (err !== null) {
-        if (err.name === 'ParameterInvalid') {
-          onShowError('Failed to send feedback', err.message, notificationId, false);
-        } else if ((err as any).body !== undefined) {
-          onShowError('Failed to send feedback', `${err.message} - ${(err as any).body}`,
-                      notificationId, false);
+    this.context.api.events.emit(
+      'submit-feedback',
+      `${this.renderType(feedbackType)} - ${title}`,
+      this.systemInfo() + '\n' + feedbackMessage,
+      feedbackHash,
+      files,
+      sendAnonymously,
+      (err: Error) => {
+        this.nextState.sending = false;
+        if (err !== null) {
+          if (err.name === 'ParameterInvalid') {
+            onShowError('Failed to send feedback', err.message, notificationId, false);
+          } else if ((err as any).body !== undefined) {
+            onShowError('Failed to send feedback', `${err.message} - ${(err as any).body}`,
+                        notificationId, false);
+          } else {
+            onShowError('Failed to send feedback', err, notificationId, false);
+          }
+          return;
         } else {
-          onShowError('Failed to send feedback', err, notificationId, false);
-        }
-        return;
-      } else {
-        onShowDialog('success', 'Feedback sent', {
-          text: 'Thank you for your feedback!\n\n'
+          onShowDialog('success', 'Feedback sent', {
+            text: 'Thank you for your feedback!\n\n'
               + 'Your feedback will be reviewed before it gets published.',
-        }, [ { label: 'Close' } ]);
-      }
+          }, [{ label: 'Close' }]);
+        }
 
-      this.nextState.feedbackTitle = '';
-      this.nextState.feedbackMessage = '';
+        this.nextState.feedbackTitle = '';
+        this.nextState.feedbackMessage = '';
 
-      let removeFiles: string[];
+        let removeFiles: string[];
 
-      if (feedbackFiles !== undefined) {
-        removeFiles = Object.keys(feedbackFiles)
-          .filter(fileId => ['State', 'Dump', 'LogCopy'].indexOf(feedbackFiles[fileId].type) !== -1)
-          .map(fileId => feedbackFiles[fileId].filePath);
-      }
+        if (feedbackFiles !== undefined) {
+          removeFiles = Object.keys(feedbackFiles)
+            .filter(fileId => ['State', 'Dump', 'LogCopy'].indexOf(feedbackFiles[fileId].type) !== -1)
+            .map(fileId => feedbackFiles[fileId].filePath);
+        }
 
-      if (removeFiles !== undefined) {
-        Promise.map(removeFiles, removeFile => fs.removeAsync(removeFile))
-          .then(() => {
-            onClearFeedbackFiles();
-            onDismissNotification(notificationId);
-          })
-          .catch(innerErr => {
-            onShowError('An error occurred removing a file', innerErr, notificationId);
-        });
-      }
-    });
+        if (removeFiles !== undefined) {
+          this.props.removeFiles(removeFiles)
+            .then(() => {
+              onClearFeedbackFiles();
+              onDismissNotification(notificationId);
+            })
+            .catch(innerErr => {
+              onShowError('An error occurred removing a file', innerErr, notificationId);
+            });
+        }
+      });
   }
 
   private handleChangeType = (newType: any) => {
@@ -1100,8 +1079,8 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 }
 
-function mapDispatchToProps(
-    dispatch: ThunkDispatch<types.IState, null, Redux.Action>): IActionProps {
+function mapDispatchToProps(dispatch: ThunkDispatch<types.IState, null, Redux.Action>)
+    : IActionProps {
   return {
     onShowActivity: (message: string, id?: string) =>
       util.showActivity(dispatch, message, id),
@@ -1129,4 +1108,4 @@ function mapStateToProps(state: any): IConnectedProps {
 export default
   withTranslation(['common'])(
     connect(mapStateToProps, mapDispatchToProps)(
-      FeedbackPage) as any) as React.ComponentClass<{}>;
+      FeedbackPage) as any) as React.ComponentClass<never>;
