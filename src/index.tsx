@@ -238,9 +238,10 @@ function logPath(fileName: string): string {
   return path.join(util.getVortexPath('userData'), fileName);
 }
 
-function dumpStateToFile(stateKey: string, name: string): Promise<IFeedbackFile> {
+function dumpStateToFileImpl(api: types.IExtensionApi, stateKey: string,
+                             name: string): Promise<IFeedbackFile> {
   return new Promise<IFeedbackFile>((resolve, reject) => {
-    const data: Buffer = Buffer.from(JSON.stringify(this.context.api.store.getState()[stateKey]));
+    const data: Buffer = Buffer.from(JSON.stringify(api.store.getState()[stateKey]));
     tmp.file({
       prefix: `${stateKey}-`,
       postfix: '.json',
@@ -299,6 +300,9 @@ function removeFiles(fileNames: string[]): Promise<void> {
 
 function init(context: types.IExtensionContext) {
   context.registerReducer(['session', 'feedback'], sessionReducer);
+
+  const dumpStateToFile = (stateKey: string, name: string) =>
+    dumpStateToFileImpl(context.api, stateKey, name);
 
   context.registerMainPage('', 'Feedback', FeedbackView, {
     hotkey: 'F',
