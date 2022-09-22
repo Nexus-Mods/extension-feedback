@@ -84,7 +84,7 @@ const SAMPLE_REPORT_SUGGESTION = 'E.g.:\n'
   + 'Proposed Implementation: Add a column to the mods page that shows the size of the mod size.';
 
 class FeedbackPage extends ComponentEx<IProps, IComponentState> {
-  private static MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024;
+  private static MAX_ATTACHMENT_SIZE = 40 * 1024 * 1024;
   private static MIN_TITLE_LENGTH = 10;
   private static MIN_TEXT_LENGTH = 50;
   private issues: IPreviewIssue[] = [];
@@ -867,7 +867,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       prev + feedbackFiles[key].size, 0);
     if (size + file.size > FeedbackPage.MAX_ATTACHMENT_SIZE) {
       onShowDialog('error', 'Attachment too big', {
-        text: 'Sorry, the combined file size must not exceed 20MB',
+        text: 'Sorry, the combined file size must not exceed 40MB',
       }, [{ label: 'Ok' }]);
     } else {
       onAddFeedbackFile(file);
