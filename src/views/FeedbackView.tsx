@@ -129,7 +129,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
     const { t } = this.props;
     const { feedbackType } = this.state;
 
-    const content = (this.context.api as any).isOutdated()
+    const content = this.context.api.isOutdated()
       ? this.renderOutdated()
       : this.renderContent();
 
@@ -290,88 +290,18 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private renderContentSuggestion = () => {
-    const { t, feedbackFiles } = this.props;
-
-    const titleValid = this.validateTitle();
-    const messageValid = this.validateMessage();
-
-    const maySend = ((titleValid === undefined) || (titleValid.valid))
-                 && (messageValid === undefined);
-
     const T: any = Trans;
-    const PanelX: any = Panel;
-    return [(
-      // tslint:disable:max-line-length
-      <FlexLayout.Fixed key='feedback-instructions'>
-        <h4>
-          {t('Describe in detail what you want to suggest.')}
-        </h4>
-        <Usage persistent infoId='feedback-suggestion-instructions'>
-          <T i18nKey='feedback-instructions' className='feedback-instructions'>
-            Please<br />
-            <ul>
-              <li>check on <a onClick={this.openIssues}>https://github.com/Nexus-Mods/Vortex/issues</a> if your suggestion
-                was already made and vote on existing reports instead of creating new ones.
-                This helps us identify the most popular requests.</li>
-              <li>use punctuation and linebreaks,</li>
-              <li>use English,</li>
-              <li>be precise and to the point. Describe as concisely the feature you'd like,
-                any form of illustration - if applicable - will help,</li>
-              <li>always explain the reason for your suggestion.
-                Don&apos;t just state the &quot;what&quot; but also the &quot;why&quot;,</li>
-              <li>report only one thing per message</li>
-            </ul>
-          </T>
-        </Usage>
-      </FlexLayout.Fixed>
-      // tslint:enable:max-line-length
-    ), (
-      <FlexLayout.Flex key='feedback-body'>
-        <Panel>
-          <PanelX.Body>
-            <FlexLayout type='column' className='feedback-form'>
-              <FlexLayout.Fixed className='hide-when-small'>
-                <h4>{t('Title')}</h4>
-              </FlexLayout.Fixed>
-              <FlexLayout.Fixed>
-                {this.renderTitleInput(titleValid)}
-              </FlexLayout.Fixed>
-              <FlexLayout.Fixed className='hide-when-small'>
-                <h4>{t('System Information')}</h4>
-              </FlexLayout.Fixed>
-              <FlexLayout.Fixed>
-                <div className='feedback-system-info'>{this.systemInfo()}</div>
-              </FlexLayout.Fixed>
-              <FlexLayout.Fixed className='hide-when-small'>
-                <h4>{t('Your Message')}</h4>
-              </FlexLayout.Fixed>
-              <FlexLayout.Flex>
-                {this.renderMessageArea(messageValid)}
-              </FlexLayout.Flex>
-              <FlexLayout.Flex className='feedback-file-drop-flex'>
-                <Dropzone
-                  accept={['files']}
-                  icon='folder-download'
-                  drop={this.dropFeedback}
-                  dropText='Drop files to attach'
-                  clickText='Click to browse for files to attach'
-                  dialogHint={t('Select file to attach')}
-                />
-              </FlexLayout.Flex>
-              <FlexLayout.Fixed>
-                {t('or')}{this.renderAttachButton()}
-              </FlexLayout.Fixed>
-              <FlexLayout.Fixed>
-                <ListGroup className='feedback-files'>
-                  {Object.keys(feedbackFiles).map(this.renderFeedbackFile)}
-                </ListGroup>
-                {this.renderFilesArea(maySend)}
-              </FlexLayout.Fixed>
-            </FlexLayout>
-          </PanelX.Body>
-        </Panel>
-      </FlexLayout.Flex>
-    )];
+    return (
+      <T i18nKey='feedback-instructions-suggestion' className='feedback-instructions-notype'>
+        <p>
+          Share your ideas and feature requests, discuss them with the community,
+          and cast your vote on feedback provided by others using our Feedback board at
+        </p>
+        <a onClick={this.openFeedbackPage}>
+          https://feedback.nexusmods.com/?tags=vortex
+        </a>
+      </T>
+    );
   }
 
   private renderContentBugReport = () => {
@@ -563,6 +493,10 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
   private openSupportForum = () => {
     util.opn('https://forums.nexusmods.com/index.php?/forum/4306-vortex-support').catch(() => null);
+  }
+
+  private openFeedbackPage = () => {
+    util.opn('https://feedback.nexusmods.com/?tags=vortex').catch(() => null);
   }
 
   private validateTitle(): { valid: boolean, text: string } {
