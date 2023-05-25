@@ -36,6 +36,7 @@ interface IConnectedProps {
   feedbackHash: string;
   feedbackFiles: { [fileId: string]: IFeedbackFile };
   APIKey: string;
+  OAuthCredentials: any;
   newestVersion: string;
 }
 
@@ -678,21 +679,23 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
   }
 
   private renderFilesArea(valid: boolean): JSX.Element {
-    const { t, APIKey } = this.props;
+    const { t, APIKey, OAuthCredentials } = this.props;
     const { anonymous, feedbackTitle, feedbackMessage, sending } = this.state;
+    
+    const loggedIn = (APIKey !== undefined) || (OAuthCredentials !== undefined);
 
-    const anon = anonymous || (APIKey === undefined);
+    const anon = anonymous || !loggedIn;
     return (
       <FlexLayout fill={false} type='row' className='feedback-controls'>
         <FlexLayout.Fixed>
           <Toggle
             checked={anon}
             onToggle={this.setAnonymous}
-            disabled={APIKey === undefined}
+            disabled={!loggedIn}
           >
             {t('Send anonymously')}
           </Toggle>
-          {(APIKey === undefined) ? (
+          {!loggedIn ? (
             <Alert bsStyle='warning'>
               {t('You are not logged in. Please include your username in your message to give us a '
                 + 'chance to reply.')}
@@ -892,7 +895,7 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
 
   private doSubmitFeedback() {
     const {
-      APIKey, feedbackFiles, feedbackHash, onClearFeedbackFiles,
+      APIKey, OAuthCredentials, feedbackFiles, feedbackHash, onClearFeedbackFiles,
       onDismissNotification, onShowActivity, onShowDialog, onShowError } = this.props;
     const { anonymous, feedbackType, feedbackTopic, feedbackTitle, feedbackMessage } = this.state;
 
@@ -906,7 +909,9 @@ class FeedbackPage extends ComponentEx<IProps, IComponentState> {
       files.push(feedbackFiles[key].filePath);
     });
 
-    const sendAnonymously = anonymous || (APIKey === undefined);
+    const loggedIn = (APIKey !== undefined) || (OAuthCredentials !== undefined);
+
+    const sendAnonymously = anonymous || !loggedIn;
     let title = feedbackTitle;
     if (feedbackType === 'bugreport') {
       title = `${this.renderTopic(feedbackTopic)}: ${title}`;
@@ -1035,6 +1040,7 @@ function mapStateToProps(state: any): IConnectedProps {
   return {
     ...state.session.feedback,
     APIKey: state.confidential.account.nexus.APIKey,
+    OAuthCredentials: state.confidential.account.nexus.OAuthCredentials,
     newestVersion: state.persistent.nexus.newestVersion,
   };
 }
