@@ -1,6 +1,6 @@
 {
   "name": "feedback",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Feedback page",
   "main": "./out/index.js",
   "scripts": {
@@ -10,9 +10,14 @@
   "author": "Black Tree Gaming Ltd.",
   "license": "GPL-3.0",
   "devDependencies": {
-    "@types/react": "16.0.34",
-    "@types/react-bootstrap": "^0.0.37",
-    "@types/react-redux": "^7.1.22",
+    "@types/react": "^16.9.43",
+    "@types/react-bootstrap": "^0.32.20",
+    "@types/react-dom": "^16.9.4",
+    "@types/react-redux": "^7.1.9",
+    "@types/react-select": "^1.2.0",
+    "@types/react-sortable-tree": "^0.3.11",
+    "@types/react-test-renderer": "^16.9.1",
+    "@types/react-transition-group": "^4.2.3",
     "@types/redux": "3.6.0",
     "@types/redux-thunk": "2.1.0",
     "@types/tmp": "^0.0.33",
@@ -25,5 +30,9 @@
     "vortex-api": "Nexus-Mods/vortex-api",
     "webpack": "^5.66.0",
     "webpack-cli": "^4.9.1"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "obscenity": "^0.4.0"
   }
 }

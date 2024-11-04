@@ -1,3 +1,37 @@
+.file-hosting-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-around;
+  padding: 20px;
+}
+
+.file-hosting-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  background-color: #f9f9f9;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  width: 48px;
+  height: 48px;
+  text-align: center;
+}
+
+.file-hosting-button:hover {
+  transform: scale(1.05);
+}
+
+.file-hosting-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
 .feedback-page {
   padding-right: $gutter-width / 2;
 }
@@ -15,15 +49,6 @@
   font-size: large;
   text-align: center;
   margin-top: 10%;
-}
-
-.textarea-feedback {
-  width: 100%;
-  resize: none;
-  height: 100% !important;
-  // position: absolute;
-  // top: 0;
-  // bottom: 0;
 }
 
 .dropzone-feedback {
@@ -97,7 +122,29 @@
 }
 
 .feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: $half-gutter;
   overflow-y: auto;
+  
+  #textarea-feedback-title,
+  #textarea-feeddback-steps,
+  #textarea-feedback-expectations,
+  #textarea-feedback-result,
+  #textarea-feedback-attachments-url
+  #textarea-feedback-message {
+    width: 100%;
+    resize: none;
+    min-height: 100%;
+    margin-bottom: 5px;
+    // position: absolute;
+    // top: 0;
+    // bottom: 0;
+  }
+  #textarea-feedback-attachments-url {
+    min-height: 50%;
+    max-height: 50%;
+  }
 }
 
 .feedback-file-drop-flex-outer {

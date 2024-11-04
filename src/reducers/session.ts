@@ -7,10 +7,6 @@ import { types, util } from 'vortex-api';
  */
 export const sessionReducer: types.IReducerSpec = {
   reducers: {
-    [actions.setFeedbackType as any]: (state, payload) =>
-      util.setSafe(util.setSafe(state,
-        ['feedbackType'], payload.feedbackType),
-        ['feedbackTopic'], payload.feedbackTopic),
     [actions.setFeedbackTitle as any]: (state, payload) =>
       util.setSafe(state, ['feedbackTitle'], payload),
     [actions.setFeedbackMessage as any]: (state, payload) =>
@@ -29,8 +25,6 @@ export const sessionReducer: types.IReducerSpec = {
       util.setSafe(state, ['feedbackFiles'], {}),
   },
   defaults: {
-    feedbackType: undefined,
-    feedbackTopic: undefined,
     feedbackTitle: '',
     feedbackMessage: '',
     feedbackHash: undefined,
