@@ -276,7 +276,7 @@ const collectLogs = async (api: types.IExtensionApi): Promise<IReportFile[]> => 
     if (!file.endsWith('.log')) {
       return Promise.resolve(acc);
     }
-    const reportFile = await identifyAttachment(path.join(util.getVortexPath('userData')));
+    const reportFile = await identifyAttachment(path.join(util.getVortexPath('userData'), file));
     return Promise.resolve(acc.concat(reportFile));
   }), Promise.resolve([]));
   return Promise.resolve(filtered);

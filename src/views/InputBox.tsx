@@ -28,7 +28,7 @@ const InputBox: React.FC<IInputProps> = (props: IInputProps) => {
       const bullet = '\u2022';
       const isLineBreak = newText.lastIndexOf('\n') === newText.length - 1;
       if (isLineBreak) {
-        onSetText({ inputType, value: newText + bullet});
+        onSetText({ inputType, value: newText + bullet });
       } else {
         onSetText({ inputType, value: newText });
       }
@@ -69,18 +69,15 @@ const InputBox: React.FC<IInputProps> = (props: IInputProps) => {
             placeholder={props.placeHolder ?? t('Type your message here...')}
           />
         </FlexLayout.Flex>
-        {(matchingIssues && matchingIssues.length > 0) && (inputType === 'title') && isFocused ? (
+        {(inputType === 'title') &&
           <div className='feedback-search-result'>
-            {matchingIssues.map((issue, idx) => SearchResult(issue, idx, onOpenUrl))}
-          </div>
-        ) : null}
-        {(validationMessage === undefined) ? null : (
-          <FlexLayout.Fixed>
-            <ControlLabel>
-              {validationMessage.text}
-            </ControlLabel>
-          </FlexLayout.Fixed>
-        )}
+            {[].concat(matchingIssues).filter(iss => !!iss).map((issue, idx) => SearchResult(issue, idx, onOpenUrl))}
+          </div>}
+        <FlexLayout.Fixed>
+          <ControlLabel>
+            {validationMessage?.text ?? 'Seems fine'}
+          </ControlLabel>
+        </FlexLayout.Fixed>
       </FlexLayout>
     </FormGroup>
   );

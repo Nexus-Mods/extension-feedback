@@ -154,6 +154,7 @@ const BugReportComponent = (props: IBugReportProps) => {
   const fields = [
     (
       <TextArea
+        key='feedback-title'
         id='feedback-title'
         label='Title'
         text={title}
@@ -232,7 +233,7 @@ const BugReportComponent = (props: IBugReportProps) => {
       <FlexLayout.Fixed key='files-list'>
         <ListGroup className='feedback-files'>
           {Object.values(reportFiles).map(reportFile =>
-            ReportFile({ reportFile, onRemoveReportFile: removeFile }))}
+            ReportFile(t, reportFile, removeFile))}
         </ListGroup>
       </FlexLayout.Fixed>
     ), (
@@ -279,9 +280,9 @@ const ReferencedIssue = (issue: IGithubIssue, onOpen: (evt: any) => void) => {
   );
 }
 
-const ReportFile = (props: { reportFile: IReportFile, onRemoveReportFile: (evt: any) => void }) => {
-  const { reportFile, onRemoveReportFile } = props;
-  const [t] = useTranslation('common');
+const ReportFile = (t: (key: string) => string,
+                    reportFile: IReportFile,
+                    onRemoveReportFile: (evt: any) => void) => {
   return (
     <ListGroupItem
       key={reportFile.filename}
