@@ -19,7 +19,6 @@ export interface IBugReportProps extends IReportPageProps {
   reportFiles: { [fileId: string]: IReportFile },
   referencedIssues: IGithubIssue[];
   reportMessage: string,
-  onOpenUrl: (evt: any) => void;
 }
 
 const T: any = Trans;
@@ -55,6 +54,7 @@ const BugReportComponent = (props: IBugReportProps) => {
 
   React.useEffect(() => {
     if (!activated) {
+      props.onGenerateAttachment()
       setActivated(true);
     }
     setTitleValid(validateInput(t, title, 'title'));
@@ -93,8 +93,8 @@ const BugReportComponent = (props: IBugReportProps) => {
       setReportDetails(null);
     }
   }, [
-    title, message, actualBehavior, expectedBehavior,
-    stepsToReproduce, attachmentUrl
+    activated, title, message, actualBehavior, expectedBehavior,
+    stepsToReproduce, attachmentUrl,
   ]);
 
   const removeFile = React.useCallback((evt: any) => {
