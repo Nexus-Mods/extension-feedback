@@ -91,6 +91,7 @@
     overflow-y: auto;
     align-items: initial !important;
   }
+
   .hide-when-small {
     display: none;
   }
@@ -126,25 +127,32 @@
   flex-direction: column;
   gap: $half-gutter;
   overflow-y: auto;
-  
-  #textarea-feedback-title,
-  #textarea-feeddback-steps,
-  #textarea-feedback-expectations,
-  #textarea-feedback-result,
-  #textarea-feedback-attachments-url
-  #textarea-feedback-message {
-    width: 100%;
-    resize: none;
-    min-height: 100%;
-    margin-bottom: 5px;
-    // position: absolute;
-    // top: 0;
-    // bottom: 0;
-  }
-  #textarea-feedback-attachments-url {
-    min-height: 50%;
-    max-height: 50%;
-  }
+}
+
+.feedback-form #textarea-feedback-title,
+.feedback-form #textarea-feedback-steps,
+.feedback-form #textarea-feedback-expectations,
+.feedback-form #textarea-feedback-result,
+.feedback-form #textarea-feedback-attachment-url,
+.feedback-form #textarea-feedback-message,
+#textarea-feedback-title,
+#textarea-feedback-steps,
+#textarea-feedback-expectations,
+#textarea-feedback-result,
+#textarea-feedback-attachment-url,
+#textarea-feedback-message {
+  width: 100%;
+  resize: none;
+  min-height: 100%;
+  margin-bottom: 5px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+#textarea-feedback-attachments-url {
+  min-height: 50%;
+  max-height: 50%;
 }
 
 .feedback-file-drop-flex-outer {
@@ -168,11 +176,13 @@
 .feedback-type-selection {
   justify-content: center;
   align-items: center;
+
   .icon-button {
     width: 110px;
     height: 110px;
     margin: $half-gutter;
     justify-content: space-evenly;
+
     svg {
       width: 2em;
       height: 2em;
