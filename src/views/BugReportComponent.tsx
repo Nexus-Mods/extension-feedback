@@ -42,7 +42,7 @@ const BugReportComponent = (props: IBugReportProps) => {
   const [actualBehavior, setActualBehavior] = React.useState('');
   const [stepsToReproduce, setStepsToReproduce] = React.useState(bullet);
   const [attachmentUrl, setAttachmentUrl] = React.useState('');
-  const [reportDetails, setReportDetails] = React.useState(null);
+  const [reportDetails, setReportDetails] = React.useState<IReportDetails>(null);
 
   const [titleValid, setTitleValid] = React.useState<IInputValidationResult>(validateInput(t, reportTitle, 'title'));
   const [messageValid, setMessageValid] = React.useState<IInputValidationResult>(validateInput(t, reportMessage, 'content'));
@@ -54,8 +54,15 @@ const BugReportComponent = (props: IBugReportProps) => {
 
   React.useEffect(() => {
     if (!activated) {
-      props.onGenerateAttachment()
       setActivated(true);
+      props.onGenerateAttachment()
+    }
+    if (hash !== reportHash) {
+      setHash(reportHash);
+    }
+
+    if (props.referencedIssues !== issues) {
+      setIssues(props.referencedIssues);
     }
     setTitleValid(validateInput(t, title, 'title'));
     setMessageValid(validateInput(t, message, 'content'));
@@ -82,18 +89,29 @@ const BugReportComponent = (props: IBugReportProps) => {
       systemInfo: systemInfo(),
       gameMode: gameMode,
       extensionVersion: game?.version,
-      stackTrace: reportMessage,
       externalFileUrl: attachmentUrl,
       hash,
       reportedBy: util.getSafe(state, ['confidential', 'account', 'nexus', 'userInfo', 'name'], 'unknown'),
     }
     setReportDetails(report);
     return () => {
-      setActivated(false);
+      setTitle('');
+      setMessage('');
+      setExpectedBehavior('');
+      setActualBehavior('');
+      setStepsToReproduce('');
+      setAttachmentUrl('');
+      setMaySend(false);
+      setTitleValid(null);
+      setMessageValid(null);
+      setExpectedValid(null);
+      setActualValid(null);
+      setStepsValid(null);
+      setUrlValid(null);
       setReportDetails(null);
     }
   }, [
-    activated, title, message, actualBehavior, expectedBehavior,
+    title, message, actualBehavior, expectedBehavior,
     stepsToReproduce, attachmentUrl,
   ]);
 
@@ -218,13 +236,15 @@ const BugReportComponent = (props: IBugReportProps) => {
         </ListGroup>
       </FlexLayout.Fixed>
     ), (
-      <ReportFooter
-        key='feedback-footer'
-        valid={maySend}
-        reportTitle={title}
-        reportMessage={message}
-        onSubmitReport={onSubmitReport}
-      />
+      <FlexLayout.Fixed key='feedback-footer'>
+        <ReportFooter
+          key='feedback-footer'
+          valid={maySend}
+          reportTitle={title}
+          reportMessage={message}
+          onSubmitReport={onSubmitReport}
+        />
+      </FlexLayout.Fixed>
     ),
   ];
 

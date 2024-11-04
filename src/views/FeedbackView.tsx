@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Trans } from 'react-i18next';
+import path from 'path';
 import { log, util, MainContext } from 'vortex-api';
 import { IReportFile, IGithubIssue, IReportDetails } from '../types';
 import BugReportComponent from './BugReportComponent';
@@ -10,7 +11,7 @@ import { setFeedbackHash } from '../actions/session';
 
 export interface IReportPageProps {
   onGenerateAttachment: () => Promise<string>;
-  onGenerateHash: () => Promise<string>;
+  onGenerateHash: (report: IReportDetails) => Promise<string>;
   onSendReport: (report: IReportDetails) => Promise<void>;
   onReadReferenceIssues: (hash: string, title: string) => Promise<IGithubIssue[]>;
   onClearReport: () => Promise<void>;
@@ -50,42 +51,33 @@ const ReportPage = (props: IReportPageProps) => {
   const [currentReportMessage, setReportMessage] = useState(reportMessage);
   const [currentHash, setHash] = useState(reportHash);
   const [currentFilteredIssues, setFilteredIssues] = useState([]);
-  
+
 
   // Example of effect to handle lifecycle behavior
   useEffect(() => {
-    if (!reportHash) {
-      // Generate the hash if we don't have one
-      (async () => {
-        try {
-          const hash = await onGenerateHash();
-          dispatch(setFeedbackHash(hash));
-        } catch (err) {
-          log('error', 'failed to generate hash', err.message);
-        }
-        
-        try {
-          const issues = await props.onReadReferenceIssues(currentHash, currentReportTitle);
-          setFilteredIssues(issues);
-        } catch (err) {
-          log('error', 'failed to read issue preview', err.message);
-        }
-      })();
-    }
+    // Generate the hash if we don't have one
+    (async () => {
+      try {
+        const issues = await props.onReadReferenceIssues(currentHash, currentReportTitle);
+        setFilteredIssues(issues);
+      } catch (err) {
+        log('error', 'failed to read issue preview', err.message);
+      }
+    })();
     return () => {
       onClearReport();
     };
-  }, [reportHash, reportFiles, reportTitle, reportMessage]); // Empty dependency array means this effect runs once on mount and unmount
+  }, [reportHash, reportFiles, reportTitle, reportMessage, currentHash]); // Empty dependency array means this effect runs once on mount and unmount
 
   const openLink = React.useCallback((evt: React.MouseEvent) => {
     evt.preventDefault();
     util.opn(evt.currentTarget.getAttribute('href') as string).catch(() => null);
     return false;
-  },[]);
+  }, []);
 
   return (
     <div>
-      <Instructions/>
+      <Instructions />
       <BugReportComponent
         key={currentHash}
         onGenerateHash={onGenerateHash}

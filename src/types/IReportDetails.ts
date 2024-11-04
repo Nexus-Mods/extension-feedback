@@ -14,12 +14,12 @@ export interface IReportDetails {
   errorMessage: string;
   gameMode: string;
   extensionVersion: string;
-  stackTrace: string;
   externalFileUrl: string;
   steps: string;
   expectedBehavior: string;
   actualBehavior: string;
   attachments: IReportFile[];
+  errorContext?: { [ key: string ]: any };
   hash: string;
   reportedBy: string;
 }

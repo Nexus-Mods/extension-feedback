@@ -198,13 +198,12 @@ const generateConstraints = (constraint: ReportInputConstraintType): IInputConst
 }
 
 export const generateHash = async (api: types.IExtensionApi, report: IReportDetails): Promise<void> => {
-  const hashElements = [report.errorMessage, report.stackTrace];
-  const hashString = hashElements.join('');
-  if (hashString === '\n') {
-    return undefined;
-  }
-  const hash = await crypto.createHash('sha256').update(hashString).digest('hex');
-  api.store?.dispatch(setFeedbackHash(hash.toString()));
+  const err: Error = new Error();
+  err.message = report.errorMessage;
+  err.stack = report.errorMessage;
+  err.name = report.title;
+  const hash = util.genHash(err);
+  api.store.dispatch(setFeedbackHash(hash));
 }
 
 const extractErrorDetails = (report: string) => {

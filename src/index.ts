@@ -348,6 +348,7 @@ const submitReport = async (api: types.IExtensionApi, reportDetails: IReportDeta
     bugReportTemplate.replace(new RegExp(`{{${key}}}`, 'ig'), value);
   }
   const fullReport = bugReportTemplate;
+  alert(fullReport);
 }
 
 const parseIssues = async (api: types.IExtensionApi, hash: string, title: string): Promise<IGithubIssue[]> => {
@@ -362,27 +363,41 @@ const parseIssues = async (api: types.IExtensionApi, hash: string, title: string
 }
 
 const generateAttachment = async (api: types.IExtensionApi) => {
+  const notifControl = (message: string, percent: number) => {
+    api.sendNotification({
+      id: 'generate-attachment-activity',
+      title: 'Generating attachment',
+      type: 'activity',
+      message,
+      progress: percent,
+    });
+  }
+  notifControl('Generating attachment', 0);
   try {
+    notifControl('Generating State Files', 10);
     const reduxFile: IReportFile = await dumpReduxActionsToFile('redux-log.json');
     const sessionFile: IReportFile = await dumpStateToFileImpl(api, 'session', 'session.json');
     const persistentFile: IReportFile = await dumpStateToFileImpl(api, 'persistent', 'persistent.json');
     const settingsFile: IReportFile = await dumpStateToFileImpl(api, 'settings', 'settings.json');
+    notifControl('Collecting Dump Files', 40);
     const crashDumps: IReportFile[] = await collectCrashDumps(api, await findCrashDumps());
+    notifControl('Collecting Log Files', 50);
     const logs: IReportFile[] = await collectLogs(api);
     await attachFiles(api, [reduxFile, sessionFile, persistentFile, settingsFile, ...crashDumps, ...logs]);
+    notifControl('Collecting Custom Files', 80);
     const attachmentPath = await generateAttachmentFromState(api);
     util.opn(attachmentPath).catch(() => null);
+    notifControl('Done', 100);
   } catch (err) {
     api.showErrorNotification('Failed to generate attachment', err);
     return null;
+  } finally {
+    api.dismissNotification('generate-attachment-activity');
   }
 }
 
 function init(context: types.IExtensionContext) {
   context.registerReducer(['session', 'feedback'], sessionReducer);
-
-  const dumpStateToFile = (stateKey: string, name: string) =>
-    dumpStateToFileImpl(context.api, stateKey, name);
 
   context.registerMainPage('', 'Feedback', ReportPage as any, {
     hotkey: 'F',
