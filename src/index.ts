@@ -343,7 +343,11 @@ function removeFiles(fileNames: string[]): Promise<void> {
 }
 
 const submitReport = async (api: types.IExtensionApi, reportDetails: IReportDetails) => {
-  
+  const bugReportTemplate = await readReferenceIssues();
+  for (const [key, value] of Object.entries(reportDetails)) {
+    bugReportTemplate.replace(new RegExp(`{{${key}}}`, 'ig'), value);
+  }
+  const fullReport = bugReportTemplate;
 }
 
 const parseIssues = async (api: types.IExtensionApi, hash: string, title: string): Promise<IGithubIssue[]> => {

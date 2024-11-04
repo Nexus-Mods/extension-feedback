@@ -14,6 +14,7 @@ export interface IReportPageProps {
   onSendReport: (report: IReportDetails) => Promise<void>;
   onReadReferenceIssues: (hash: string, title: string) => Promise<IGithubIssue[]>;
   onClearReport: () => Promise<void>;
+  onOpenUrl: (evt: any) => void;
 }
 
 const T: any = Trans;
@@ -97,6 +98,7 @@ const ReportPage = (props: IReportPageProps) => {
         reportMessage={currentReportMessage}
         reportTitle={currentReportTitle}
         referencedIssues={currentFilteredIssues}
+        onOpenUrl={openLink}
       />
     </div>
   );
