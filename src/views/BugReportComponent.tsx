@@ -1,19 +1,26 @@
 /* eslint-disable */
-import React, { useContext } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { FlexLayout, MainContext, selectors, tooltip, util } from 'vortex-api';
 import { IReportPageProps } from './FeedbackView';
 import { IReportFile, IGithubIssue, IReportDetails, ITextChangeData, IInputValidationResult } from '../types';
 import { systemInfo, validateInput } from '../util';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useStore } from 'react-redux';
 import TextArea from './TextArea';
 import { removeFeedbackFile } from '../actions/session';
 import ReportFooter from './ReportFooter';
 import SystemInfo from './SystemInfo';
 import HostingComponent from './HostingComponent';
+import { set } from 'lodash';
 
-export interface IBugReportProps extends IReportPageProps {
+export interface IBugReportProps {
+  onOpenUrl: (evt: any) => void;
+  onSetMaySend: (enabled) => void;
+  onRefreshHash: () => void;
+  onSetReport: (report: IReportDetails) => void;
+  onSumbitReport: () => void;
+  maySend: boolean;
   reportTitle: string;
   reportHash: string,
   reportFiles: { [fileId: string]: IReportFile },
@@ -24,25 +31,25 @@ export interface IBugReportProps extends IReportPageProps {
 const T: any = Trans;
 
 const isValid = (validationResult: IInputValidationResult) => {
-  return (validationResult === undefined) || (validationResult.valid);
+  return (!validationResult) || (validationResult.valid);
 };
 
 const BugReportComponent = (props: IBugReportProps) => {
   const [t] = useTranslation('common');
-  const { reportTitle, reportMessage, reportHash, reportFiles } = props;
+  const {
+    reportTitle, reportMessage, reportHash, reportFiles,
+    onSetReport, onSumbitReport, maySend,
+    referencedIssues, onSetMaySend, onRefreshHash
+  } = props;
+
   const dispatch = useDispatch();
-  const context = useContext(MainContext);
   const bullet = '\u2022';
-  const [hash, setHash] = React.useState(reportHash);
-  const [issues, setIssues] = React.useState(props.referencedIssues ?? []);
   const [title, setTitle] = React.useState(reportTitle);
-  const [activated, setActivated] = React.useState(false);
   const [message, setMessage] = React.useState(reportMessage);
   const [expectedBehavior, setExpectedBehavior] = React.useState('');
   const [actualBehavior, setActualBehavior] = React.useState('');
   const [stepsToReproduce, setStepsToReproduce] = React.useState(bullet);
   const [attachmentUrl, setAttachmentUrl] = React.useState('');
-  const [reportDetails, setReportDetails] = React.useState<IReportDetails>(null);
 
   const [titleValid, setTitleValid] = React.useState<IInputValidationResult>(validateInput(t, reportTitle, 'title'));
   const [messageValid, setMessageValid] = React.useState<IInputValidationResult>(validateInput(t, reportMessage, 'content'));
@@ -50,36 +57,23 @@ const BugReportComponent = (props: IBugReportProps) => {
   const [actualValid, setActualValid] = React.useState<IInputValidationResult>(validateInput(t, actualBehavior, 'content'));
   const [stepsValid, setStepsValid] = React.useState<IInputValidationResult>(validateInput(t, stepsToReproduce, 'content'));
   const [urlValid, setUrlValid] = React.useState<IInputValidationResult>(validateInput(t, attachmentUrl, 'url'));
-  const [maySend, setMaySend] = React.useState(false);
+  const [debounce,] = React.useState(new util.Debouncer(async () => {
+    const isValidForm = isValid(titleValid)
+                     && isValid(messageValid)
+                     && isValid(expectedValid)
+                     && isValid(actualValid)
+                     && isValid(stepsValid)
+                     && isValid(urlValid);
+    onSetMaySend(isValidForm);
+    onSetReport(genReportDetails);
+    onRefreshHash();
+  }, 1000));
 
-  React.useEffect(() => {
-    if (!activated) {
-      setActivated(true);
-      props.onGenerateAttachment()
-    }
-    if (hash !== reportHash) {
-      setHash(reportHash);
-    }
-
-    if (props.referencedIssues !== issues) {
-      setIssues(props.referencedIssues);
-    }
-    setTitleValid(validateInput(t, title, 'title'));
-    setMessageValid(validateInput(t, message, 'content'));
-    setExpectedValid(validateInput(t, expectedBehavior, 'content'));
-    setActualValid(validateInput(t, actualBehavior, 'content'));
-    setStepsValid(validateInput(t, stepsToReproduce, 'content'));
-    setUrlValid(validateInput(t, attachmentUrl, 'url'));
-    setMaySend(isValid(titleValid)
-            && isValid(messageValid)
-            && isValid(actualValid)
-            && isValid(expectedValid)
-            && isValid(stepsValid));
-
-    const state = context.api.getState();
-    const gameMode = selectors.activeGameId(state);
-    const game = gameMode ? util.getGame(gameMode) : undefined;
-    const report: IReportDetails = {
+  const store = useStore();
+  const gameMode = selectors.activeGameId(store.getState());
+  const game = gameMode ? util.getGame(gameMode) : undefined;
+  const genReportDetails = useMemo(() => {
+    return {
       title,
       errorMessage: message,
       attachments: Object.values(reportFiles),
@@ -88,32 +82,18 @@ const BugReportComponent = (props: IBugReportProps) => {
       steps: stepsToReproduce,
       systemInfo: systemInfo(),
       gameMode: gameMode,
-      extensionVersion: game?.version,
+      extensionVersion: game?.version ?? '0.0.0',
       externalFileUrl: attachmentUrl,
-      hash,
-      reportedBy: util.getSafe(state, ['confidential', 'account', 'nexus', 'userInfo', 'name'], 'unknown'),
+      hash: reportHash,
+      reportedBy: util.getSafe(store.getState(), ['confidential', 'account', 'nexus', 'userInfo', 'name'], 'unknown'),
     }
-    setReportDetails(report);
-    return () => {
-      setTitle('');
-      setMessage('');
-      setExpectedBehavior('');
-      setActualBehavior('');
-      setStepsToReproduce('');
-      setAttachmentUrl('');
-      setMaySend(false);
-      setTitleValid(null);
-      setMessageValid(null);
-      setExpectedValid(null);
-      setActualValid(null);
-      setStepsValid(null);
-      setUrlValid(null);
-      setReportDetails(null);
-    }
-  }, [
-    title, message, actualBehavior, expectedBehavior,
-    stepsToReproduce, attachmentUrl,
-  ]);
+  }, [message, reportFiles, actualBehavior, expectedBehavior,
+    title, stepsToReproduce, attachmentUrl, reportHash]);
+  
+  const onSubmit = React.useCallback(() => {
+    onSetReport(genReportDetails);
+    onSumbitReport();
+  }, [title, actualBehavior, expectedBehavior, stepsToReproduce, message, attachmentUrl, reportFiles, reportHash]);
 
   const removeFile = React.useCallback((evt: any) => {
     const fileName = evt.currentTarget.getAttribute('data-file');
@@ -122,34 +102,39 @@ const BugReportComponent = (props: IBugReportProps) => {
     }
   }, [reportFiles]);
 
+  React.useEffect(() => {
+    debounce.schedule();
+  },[debounce, title, message, actualBehavior, expectedBehavior, stepsToReproduce, attachmentUrl]);
+
   const onTextChange = React.useCallback((evt: ITextChangeData) => {
     const { inputType, value } = evt;
     switch (inputType) {
       case 'title':
+        setTitleValid(validateInput(t, value, 'title'));
         setTitle(value);
         break;
       case 'message':
+        setMessageValid(validateInput(t, value, 'content'));
         setMessage(value);
         break;
       case 'expected':
+        setExpectedValid(validateInput(t, value, 'content'));
         setExpectedBehavior(value);
         break;
       case 'actual':
+        setActualValid(validateInput(t, value, 'content'));
         setActualBehavior(value);
         break;
       case 'steps':
+        setStepsValid(validateInput(t, value, 'content'));
         setStepsToReproduce(value);
         break;
       case 'url':
+        setUrlValid(validateInput(t, value, 'url'));
         setAttachmentUrl(value);
         break;
     }
-  }, [reportTitle, reportMessage, expectedBehavior, actualBehavior, stepsToReproduce, attachmentUrl]);
-  const onSubmitReport = React.useCallback(() => {
-    if (maySend) {
-      props.onSendReport(reportDetails);
-    }
-  }, [reportDetails]);
+  }, []);
 
   const fields = [
     (
@@ -163,10 +148,10 @@ const BugReportComponent = (props: IBugReportProps) => {
         onSetText={onTextChange}
       />
     ), (
-      <FlexLayout.Fixed key='files-list'>
+      <FlexLayout.Fixed key='referenced-issues'>
         <h4>{t('Similar issues posted by other users:')}</h4>
-        <ListGroup className='feedback-files'>
-          {issues.map(iss => ReferencedIssue(iss, props.onOpenUrl))}
+        <ListGroup className='referenced-issues'>
+          {referencedIssues.map(iss => ReferencedIssue(iss, props.onOpenUrl))}
         </ListGroup>
       </FlexLayout.Fixed>
     ), (
@@ -218,7 +203,7 @@ const BugReportComponent = (props: IBugReportProps) => {
         onSetText={onTextChange}
       />
     ), (
-      <HostingComponent/>
+      <HostingComponent key='feedback-hosting' />
     ), (
       <TextArea
         key='feedback-attachment-url'
@@ -243,7 +228,7 @@ const BugReportComponent = (props: IBugReportProps) => {
           valid={maySend}
           reportTitle={title}
           reportMessage={message}
-          onSubmitReport={onSubmitReport}
+          onSubmitReport={onSubmit}
         />
       </FlexLayout.Fixed>
     ),

@@ -1,19 +1,20 @@
 /* eslint-disable */
-import React, { useState, useEffect, useContext } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
+import { useDispatch, useSelector, useStore } from 'react-redux';
 import { Trans } from 'react-i18next';
-import path from 'path';
 import { log, util, MainContext } from 'vortex-api';
 import { IReportFile, IGithubIssue, IReportDetails } from '../types';
 import BugReportComponent from './BugReportComponent';
 import Instructions from './Instructions';
+import { selectors } from 'vortex-api';
+import { generateHash, systemInfo } from '../util';
+
 import { setFeedbackHash } from '../actions/session';
 
 export interface IReportPageProps {
-  onGenerateAttachment: () => Promise<string>;
-  onGenerateHash: (report: IReportDetails) => Promise<string>;
+  onGenerateReportFiles: () => Promise<string>;
   onSendReport: (report: IReportDetails) => Promise<void>;
-  onReadReferenceIssues: (hash: string, title: string) => Promise<IGithubIssue[]>;
+  onFindRelatedIssues: (reportDetails: IReportDetails) => Promise<IGithubIssue[]>;
   onClearReport: () => Promise<void>;
   onOpenUrl: (evt: any) => void;
 }
@@ -26,12 +27,13 @@ interface IConnectedProps {
   reportHash: string;
   reportFiles: { [fileId: string]: IReportFile };
   newestVersion: string;
+  gameMode: string;
 }
 
 const ReportPage = (props: IReportPageProps) => {
-  const { reportFiles, newestVersion, reportTitle,
-    reportHash, reportMessage
+  const { reportFiles, reportTitle, reportHash, reportMessage, gameMode
   }: IConnectedProps = useSelector((state: any) => ({
+    gameMode: selectors.activeGameId(state) ?? null,
     newestVersion: state.persistent.nexus?.newestVersion ?? null,
     reportFiles: state.session.feedback.feedbackFiles ?? [],
     reportHash: state.session.feedback.feedbackHash ?? null,
@@ -39,35 +41,52 @@ const ReportPage = (props: IReportPageProps) => {
     reportTitle: state.session.feedback.feedbackTitle ?? '',
   }));
 
-  const { onReadReferenceIssues, onClearReport, onSendReport,
-    onGenerateAttachment, onGenerateHash
-  } = props;
+  const { onFindRelatedIssues, onSendReport } = props;
 
-  const dispatch = useDispatch();
-  const context = useContext(MainContext);
-
-
-  const [currentReportTitle, setReportTitle] = useState(reportTitle);
-  const [currentReportMessage, setReportMessage] = useState(reportMessage);
   const [currentHash, setHash] = useState(reportHash);
   const [currentFilteredIssues, setFilteredIssues] = useState([]);
-
-
-  // Example of effect to handle lifecycle behavior
-  useEffect(() => {
-    // Generate the hash if we don't have one
-    (async () => {
-      try {
-        const issues = await props.onReadReferenceIssues(currentHash, currentReportTitle);
-        setFilteredIssues(issues);
-      } catch (err) {
-        log('error', 'failed to read issue preview', err.message);
+  const [reportDetails, setReportDetails] = React.useState<IReportDetails>(null);
+  const [maySend, setMaySend] = React.useState(false);
+  const [debounce,] = React.useState(new util.Debouncer(async (updatedHash: string) => {
+    if (!updatedHash || (updatedHash !== currentHash)) {
+      if (updatedHash) {
+        setHash(updatedHash);
+      } else {
+        const tempReport: IReportDetails = await genFallbackReport(selectors.activeGameId(store.getState()));
+        const hash = await tempReport.hash;
+        store.dispatch(setFeedbackHash(hash));
+        setReportDetails(tempReport);
       }
-    })();
-    return () => {
-      onClearReport();
-    };
-  }, [reportHash, reportFiles, reportTitle, reportMessage, currentHash]); // Empty dependency array means this effect runs once on mount and unmount
+    } else {
+      const rep = { ...reportDetails };
+      rep.hash = await generateHash(rep);
+      setReportDetails(rep);
+    }
+    const issues = await onFindRelatedIssues(reportDetails);
+    setFilteredIssues(issues);
+    return Promise.resolve();
+  }, 1000));
+
+  const onSubmitReport = React.useCallback(() => {
+    if (maySend) {
+      onSendReport(reportDetails);
+    }
+  }, [reportDetails, maySend]);
+
+  const onRefreshHash = React.useCallback(async () => {
+    if (!reportDetails?.errorMessage) {
+      return;
+    }
+    const hash = await generateHash(reportDetails);
+    if (hash !== reportHash) {
+      debounce.schedule(undefined, hash); 
+    }
+  }, [reportDetails, reportHash, debounce]);
+
+  const store = useStore();
+  useEffect(() => {
+    debounce.schedule(undefined, reportHash);
+  }, [reportDetails, reportHash, reportTitle, reportMessage, debounce]);
 
   const openLink = React.useCallback((evt: React.MouseEvent) => {
     evt.preventDefault();
@@ -79,22 +98,38 @@ const ReportPage = (props: IReportPageProps) => {
     <div>
       <Instructions />
       <BugReportComponent
+        onRefreshHash={onRefreshHash}
+        onSetMaySend={setMaySend}
+        maySend={maySend}
         key={currentHash}
-        onGenerateHash={onGenerateHash}
-        onGenerateAttachment={onGenerateAttachment}
-        onSendReport={onSendReport}
-        onReadReferenceIssues={onReadReferenceIssues}
-        onClearReport={onClearReport}
+        onSumbitReport={onSubmitReport}
+        onSetReport={setReportDetails}
         reportFiles={reportFiles}
         reportHash={currentHash}
-        reportMessage={currentReportMessage}
-        reportTitle={currentReportTitle}
+        reportMessage={reportMessage}
+        reportTitle={reportTitle}
         referencedIssues={currentFilteredIssues}
         onOpenUrl={openLink}
       />
     </div>
   );
 };
+
+let _fallbackReport: IReportDetails = null;
+const genFallbackReport: (gameMode) => Promise<Partial<IReportDetails>> = async (gameMode: string) => {
+  if (_fallbackReport) {
+    return _fallbackReport;
+  }
+  const fallback: Partial<IReportDetails> = {
+    gameMode,
+    title: 'Feedback',
+    errorMessage: 'Please select the type of Feedback you\'d like to send in.',
+    systemInfo: systemInfo()
+  }
+  fallback.hash = await generateHash(fallback);
+  _fallbackReport = fallback;
+  return _fallbackReport;
+}
 
 const renderNoType = (t: (key: string) => string) => {
   return (

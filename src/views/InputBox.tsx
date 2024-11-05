@@ -74,9 +74,10 @@ const InputBox: React.FC<IInputProps> = (props: IInputProps) => {
             {[].concat(matchingIssues).filter(iss => !!iss).map((issue, idx) => SearchResult(issue, idx, onOpenUrl))}
           </div>}
         <FlexLayout.Fixed>
+          {validationMessage?.text && 
           <ControlLabel>
-            {validationMessage?.text ?? 'Seems fine'}
-          </ControlLabel>
+            {validationMessage.text}
+          </ControlLabel>}
         </FlexLayout.Fixed>
       </FlexLayout>
     </FormGroup>

@@ -8,18 +8,19 @@ export interface ISystemInfo {
   process: string;
 }
 
+
 export interface IReportDetails {
-  title: string;
-  systemInfo: ISystemInfo;
-  errorMessage: string;
-  gameMode: string;
-  extensionVersion: string;
-  externalFileUrl: string;
-  steps: string;
-  expectedBehavior: string;
-  actualBehavior: string;
-  attachments: IReportFile[];
+  title?: string;
+  systemInfo?: ISystemInfo;
+  errorMessage?: string;
+  gameMode?: string;
+  extensionVersion?: string;
+  externalFileUrl?: string;
+  steps?: string;
+  expectedBehavior?: string;
+  actualBehavior?: string;
+  attachments?: IReportFile[];
   errorContext?: { [ key: string ]: any };
-  hash: string;
-  reportedBy: string;
+  hash?: string | Promise<string>;
+  reportedBy?: string;
 }

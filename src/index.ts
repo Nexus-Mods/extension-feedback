@@ -7,7 +7,12 @@ import {
 import { sessionReducer } from './reducers/session';
 import { IGithubIssue, IReportDetails, IReportFile } from './types';
 
-import { attachFiles, generateAttachmentFromState, generateHash, getCurrentReportFiles, SAMPLE_REPORT_BUG, zipFiles } from './util';
+import { memoize } from 'lodash';
+
+import {
+  attachFiles, generateAttachment,
+  generateHash, getCurrentReportFiles, SAMPLE_REPORT_BUG
+} from './util';
 
 import ReportPage from './views/FeedbackView';
 
@@ -236,28 +241,31 @@ async function downloadGithubFile(repoOwner: string, repoName: string, filePath:
   const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/update-issue-tracker/${filePath}`;
 
   try {
-      const response = await axios.get(url, {
-          responseType: 'stream'
-      });
-      const writer = fs.createWriteStream(path.resolve(outputPath));
+    const response = await axios.get(url, {
+      responseType: 'stream'
+    });
+    const writer = fs.createWriteStream(path.resolve(outputPath));
 
-      response.data.pipe(writer);
+    response.data.pipe(writer);
 
-      return new Promise((resolve, reject) => {
-          writer.on('finish', resolve);
-          writer.on('error', reject);
-      });
+    return new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
   } catch (error) {
-      console.error(`Error downloading file: ${error.message}`);
+    console.error(`Error downloading file: ${error.message}`);
   }
 }
 
-function readReferenceIssues() {
-  return fs.readFileAsync(path.join(util.getVortexPath('temp'), 'issues_report.json'), { encoding: 'utf-8' })
-    .then(data => {
-      return JSON.parse(data);
-    });
-}
+const readReferenceIssues = memoize(async (): Promise<IGithubIssue[]> => {
+  const data = await fs.readFileAsync(path.join(util.getVortexPath('temp'), 'issues_report.json'), { encoding: 'utf-8' });
+  try {
+    return JSON.parse(data);
+  } catch (err) {
+    log('warn', 'Failed to parse feedback reference issues', err.message);
+    return [];
+  }
+})
 
 async function identifyAttachment(filePath: string, type?: string): Promise<IReportFile> {
   return fs.statAsync(filePath)
@@ -343,56 +351,50 @@ function removeFiles(fileNames: string[]): Promise<void> {
 }
 
 const submitReport = async (api: types.IExtensionApi, reportDetails: IReportDetails) => {
-  const bugReportTemplate = await readReferenceIssues();
+  const bugReportTemplate = await fs.readFileAsync(path.join(__dirname, 'bug_report.md'), { encoding: 'utf-8' });
   for (const [key, value] of Object.entries(reportDetails)) {
     bugReportTemplate.replace(new RegExp(`{{${key}}}`, 'ig'), value);
   }
+  // const title = Object.values(bugReportTemplate).find()
   const fullReport = bugReportTemplate;
   alert(fullReport);
 }
 
-const parseIssues = async (api: types.IExtensionApi, hash: string, title: string): Promise<IGithubIssue[]> => {
+const updateReferenceIssues = async (api: types.IExtensionApi) => {
   const issuesFilePath = path.join(util.getVortexPath('temp'), 'issues_report.json');
   try {
-    const issues: IGithubIssue[] = JSON.parse(await fs.readFileAsync(issuesFilePath, { encoding: 'utf-8' }));
-    return issues.filter(issue => issue?.hash === hash || partial_ratio(issue.title, title) > 90);
+    await downloadGithubFile('Nexus-Mods', 'Vortex-Backend', 'out/issues_report.json', issuesFilePath);
+    await readReferenceIssues();
+    await generateReportFiles(api);
+  } catch (err) {
+    log('warn', 'Failed to update or parse feedback reference issues', err.message);
+  }
+}
+
+const findRelatedIssues = async (report: IReportDetails): Promise<IGithubIssue[]> => {
+  try {
+    const issues: IGithubIssue[] = await readReferenceIssues();
+    return issues.filter(issue =>
+      issue?.hash === report.hash
+        || partial_ratio(issue.title, report.title) > 90
+        || partial_ratio(issue.body, report.errorMessage) > 90);
   } catch (err) {
     log('warn', 'Failed to parse feedback reference issues', err.message);
     return [];
   }
 }
 
-const generateAttachment = async (api: types.IExtensionApi) => {
-  const notifControl = (message: string, percent: number) => {
-    api.sendNotification({
-      id: 'generate-attachment-activity',
-      title: 'Generating attachment',
-      type: 'activity',
-      message,
-      progress: percent,
-    });
-  }
-  notifControl('Generating attachment', 0);
+const generateReportFiles = async (api: types.IExtensionApi): Promise<void> => {
   try {
-    notifControl('Generating State Files', 10);
     const reduxFile: IReportFile = await dumpReduxActionsToFile('redux-log.json');
     const sessionFile: IReportFile = await dumpStateToFileImpl(api, 'session', 'session.json');
     const persistentFile: IReportFile = await dumpStateToFileImpl(api, 'persistent', 'persistent.json');
     const settingsFile: IReportFile = await dumpStateToFileImpl(api, 'settings', 'settings.json');
-    notifControl('Collecting Dump Files', 40);
     const crashDumps: IReportFile[] = await collectCrashDumps(api, await findCrashDumps());
-    notifControl('Collecting Log Files', 50);
     const logs: IReportFile[] = await collectLogs(api);
     await attachFiles(api, [reduxFile, sessionFile, persistentFile, settingsFile, ...crashDumps, ...logs]);
-    notifControl('Collecting Custom Files', 80);
-    const attachmentPath = await generateAttachmentFromState(api);
-    util.opn(attachmentPath).catch(() => null);
-    notifControl('Done', 100);
   } catch (err) {
-    api.showErrorNotification('Failed to generate attachment', err);
-    return null;
-  } finally {
-    api.dismissNotification('generate-attachment-activity');
+    api.showErrorNotification('Failed to generate report files', err, { allowReport: false });
   }
 }
 
@@ -403,10 +405,13 @@ function init(context: types.IExtensionContext) {
     hotkey: 'F',
     group: 'hidden',
     props: () => ({
-      onGenerateAttachment: () => generateAttachment(context.api),
-      onGenerateHash: (reportDetails: IReportDetails) => generateHash(context.api, reportDetails),
+      onGenerateReportFiles: () => generateAttachment(context.api),
+      onGenerateHash: async (reportDetails: IReportDetails) => {
+        const hash = await generateHash(reportDetails);
+        context.api.store!.dispatch(setFeedbackHash(hash));
+      },
       onSendReport: (reportDetails: IReportDetails) => submitReport(context.api, reportDetails),
-      onReadReferenceIssues: (hash: string, title: string) => parseIssues(context.api, hash, title),
+      onFindRelatedIssues: (reportDetails: IReportDetails) => findRelatedIssues(reportDetails),
       onClearReport: () => {
         const batched = [
           setFeedbackTitle(''),
@@ -423,6 +428,7 @@ function init(context: types.IExtensionContext) {
     context.api.events.emit('show-main-page', 'Feedback'));
 
   context.once(() => {
+    updateReferenceIssues(context.api);
     context.api.setStylesheet('feedback', path.join(__dirname, 'feedback.scss'));
 
     context.api.events.on('report-feedback', (report: types.IFeedbackReport) => {

@@ -72,7 +72,7 @@ export const DEFAULT_TEMPLATE = `
 - **User**: {{reportedBy}}
     `.trim();
 
-export async function generateAttachmentFromState(api: types.IExtensionApi) {
+export async function generateAttachment(api: types.IExtensionApi): Promise<string> {
   const files: IReportFile[] = getCurrentReportFiles(api);
   if (files.length === 0) {
     return null;
@@ -197,13 +197,13 @@ const generateConstraints = (constraint: ReportInputConstraintType): IInputConst
   }
 }
 
-export const generateHash = async (api: types.IExtensionApi, report: IReportDetails): Promise<void> => {
+export const generateHash = async (report: IReportDetails): Promise<string> => {
+  // Important note: don't forget to assign the hash!
   const err: Error = new Error();
   err.message = report.errorMessage;
-  err.stack = report.errorMessage;
+  err.stack = report.errorMessage ?? err.stack;
   err.name = report.title;
-  const hash = util.genHash(err);
-  api.store.dispatch(setFeedbackHash(hash));
+  return util.genHash(err);
 }
 
 const extractErrorDetails = (report: string) => {
