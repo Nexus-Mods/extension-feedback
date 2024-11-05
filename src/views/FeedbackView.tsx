@@ -12,6 +12,7 @@ import { generateHash, systemInfo } from '../util';
 import { setFeedbackHash } from '../actions/session';
 
 export interface IReportPageProps {
+  onGenerateAttachment: () => Promise<string>;
   onGenerateReportFiles: () => Promise<string>;
   onSendReport: (report: IReportDetails) => Promise<void>;
   onFindRelatedIssues: (reportDetails: IReportDetails) => Promise<IGithubIssue[]>;
@@ -41,12 +42,11 @@ const ReportPage = (props: IReportPageProps) => {
     reportTitle: state.session.feedback.feedbackTitle ?? '',
   }));
 
-  const { onFindRelatedIssues, onSendReport } = props;
+  const { onFindRelatedIssues, onSendReport, onGenerateAttachment } = props;
 
   const [currentHash, setHash] = useState(reportHash);
   const [currentFilteredIssues, setFilteredIssues] = useState([]);
   const [reportDetails, setReportDetails] = React.useState<IReportDetails>(null);
-  const [maySend, setMaySend] = React.useState(false);
   const [debounce,] = React.useState(new util.Debouncer(async (updatedHash: string) => {
     if (!updatedHash || (updatedHash !== currentHash)) {
       if (updatedHash) {
@@ -68,10 +68,8 @@ const ReportPage = (props: IReportPageProps) => {
   }, 1000));
 
   const onSubmitReport = React.useCallback(() => {
-    if (maySend) {
-      onSendReport(reportDetails);
-    }
-  }, [reportDetails, maySend]);
+    onSendReport(reportDetails);
+  }, [reportDetails]);
 
   const onRefreshHash = React.useCallback(async () => {
     if (!reportDetails?.errorMessage) {
@@ -79,7 +77,7 @@ const ReportPage = (props: IReportPageProps) => {
     }
     const hash = await generateHash(reportDetails);
     if (hash !== reportHash) {
-      debounce.schedule(undefined, hash); 
+      debounce.schedule(undefined, hash);
     }
   }, [reportDetails, reportHash, debounce]);
 
@@ -99,8 +97,6 @@ const ReportPage = (props: IReportPageProps) => {
       <Instructions />
       <BugReportComponent
         onRefreshHash={onRefreshHash}
-        onSetMaySend={setMaySend}
-        maySend={maySend}
         key={currentHash}
         onSumbitReport={onSubmitReport}
         onSetReport={setReportDetails}
@@ -110,6 +106,7 @@ const ReportPage = (props: IReportPageProps) => {
         reportTitle={reportTitle}
         referencedIssues={currentFilteredIssues}
         onOpenUrl={openLink}
+        onGenerateAttachment={onGenerateAttachment}
       />
     </div>
   );
@@ -124,7 +121,7 @@ const genFallbackReport: (gameMode) => Promise<Partial<IReportDetails>> = async 
     gameMode,
     title: 'Feedback',
     errorMessage: 'Please select the type of Feedback you\'d like to send in.',
-    systemInfo: systemInfo()
+    systemInfo: systemInfo(),
   }
   fallback.hash = await generateHash(fallback);
   _fallbackReport = fallback;

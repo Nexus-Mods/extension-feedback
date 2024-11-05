@@ -7,23 +7,34 @@ export interface IFooterProps {
   reportTitle: string;
   reportMessage: string;
   onSubmitReport: () => void;
+  onGenerateAttachment: () => void;
 }
 
 const ReportFooter = (props: IFooterProps): JSX.Element => {
   const [t] = useTranslation('common');
-  const { valid, reportTitle, reportMessage, onSubmitReport } = props;
+  const { valid, onSubmitReport, onGenerateAttachment } = props;
 
   return (
     <FlexLayout fill={false} type='row' className='feedback-controls'>
       <FlexLayout.Fixed>
         <tooltip.Button
-          style={{ display: 'block', marginLeft: 'auto', marginRight: 0 }}
+          style={{ display: 'flex',
+            marginLeft: 'auto', marginRight: 0 }}
+          id='btn-submit-feedback'
+          tooltip={t('Generate an attachment for your report (remember you still have to host it somewhere share-able)')}
+          onClick={onGenerateAttachment}
+        >
+          {t('Generate Attachment')}
+        </tooltip.Button>
+      </FlexLayout.Fixed>
+      <FlexLayout.Fixed>
+        <tooltip.Button
+          style={{ display: 'flex',
+            marginLeft: 'auto', marginRight: 0 }}
           id='btn-submit-feedback'
           tooltip={t('Submit Feedback')}
           onClick={onSubmitReport}
-          disabled={(reportTitle.length === 0)
-                  || (reportMessage.length === 0)
-                  || !valid}
+          disabled={(valid === false)}
         >
           {t('Submit Feedback')}
         </tooltip.Button>

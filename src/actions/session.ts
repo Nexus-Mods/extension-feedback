@@ -18,3 +18,9 @@ export const removeFeedbackFile = createAction('REMOVE_FEEDBACK_FILE',
   (feedbackFileId: string) => ({ feedbackFileId }));
 
 export const clearFeedbackFiles = createAction('CLEAR_FEEDBACK_FILES');
+
+export const setFeedbackMutable = createAction('SET_FEEDBACK_MUTABLE',
+  (mutable: boolean) => mutable);
+
+export const setFeedbackArchiveFilePath = createAction('SET_FEEDBACK_ARCHIVE_PATH',
+    (filePath: string) => filePath);

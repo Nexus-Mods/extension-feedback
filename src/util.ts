@@ -112,7 +112,7 @@ export const validateInput = (t: any, input: string, constraint: ReportInputCons
     };
   }
 
-  if (constraints.isValid) {
+  if (!!constraints?.isValid) {
     const valid = constraint === 'url' && !constraints.isValid(input) ? {
       valid: false,
       text: t('The attachment url "{{url}}" is invalid', { replace: { url: input } }),

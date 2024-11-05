@@ -1,3 +1,4 @@
+import { stat } from 'fs';
 import * as actions from '../actions/session';
 
 import { types, util } from 'vortex-api';
@@ -13,6 +14,10 @@ export const sessionReducer: types.IReducerSpec = {
       util.setSafe(state, ['feedbackMessage'], payload),
     [actions.setFeedbackHash as any]: (state, payload) =>
       util.setSafe(state, ['feedbackHash'], payload),
+    [actions.setFeedbackMutable as any]: (state, payload) =>
+      util.setSafe(state, ['feedbackMutable'], payload),
+    [actions.setFeedbackArchiveFilePath as any]: (state, payload) =>
+      util.setSafe(state, ['feedbackArchiveFilePath'], payload),
     [actions.addFeedbackFile as any]: (state, payload) => {
       const { feedbackFile } = payload;
       return util.setSafe(state, ['feedbackFiles', feedbackFile.filename], feedbackFile);
@@ -29,5 +34,7 @@ export const sessionReducer: types.IReducerSpec = {
     feedbackMessage: '',
     feedbackHash: undefined,
     feedbackFiles: {},
+    feedbackMutable: true,
+    feedbackArchiveFilePath: undefined,
   },
 };

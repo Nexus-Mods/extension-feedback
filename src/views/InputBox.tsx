@@ -69,7 +69,7 @@ const InputBox: React.FC<IInputProps> = (props: IInputProps) => {
             placeholder={props.placeHolder ?? t('Type your message here...')}
           />
         </FlexLayout.Flex>
-        {(inputType === 'title') &&
+        {(inputType === 'title' && isFocused && matchingIssues?.length > 0) &&
           <div className='feedback-search-result'>
             {[].concat(matchingIssues).filter(iss => !!iss).map((issue, idx) => SearchResult(issue, idx, onOpenUrl))}
           </div>}

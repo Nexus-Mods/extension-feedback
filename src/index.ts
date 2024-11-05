@@ -1,8 +1,8 @@
 /* eslint-disable */
 import { partial_ratio } from 'fuzzball';
 import {
-  addFeedbackFile, clearFeedbackFiles, setFeedbackHash,
-  setFeedbackMessage, setFeedbackTitle,
+  addFeedbackFile, clearFeedbackFiles, setFeedbackArchiveFilePath, setFeedbackHash,
+  setFeedbackMessage, setFeedbackMutable, setFeedbackTitle,
 } from './actions/session';
 import { sessionReducer } from './reducers/session';
 import { IGithubIssue, IReportDetails, IReportFile } from './types';
@@ -353,11 +353,10 @@ function removeFiles(fileNames: string[]): Promise<void> {
 const submitReport = async (api: types.IExtensionApi, reportDetails: IReportDetails) => {
   const bugReportTemplate = await fs.readFileAsync(path.join(__dirname, 'bug_report.md'), { encoding: 'utf-8' });
   for (const [key, value] of Object.entries(reportDetails)) {
-    bugReportTemplate.replace(new RegExp(`{{${key}}}`, 'ig'), value);
+    bugReportTemplate.replace(new RegExp(`{{${key}}}`, 'igm'), encodeURIComponent(value));
   }
+  util.opn('https://github.com/Nexus-Mods/Vortex-Backend/issues/new?body=' + encodeURIComponent(bugReportTemplate));
   // const title = Object.values(bugReportTemplate).find()
-  const fullReport = bugReportTemplate;
-  alert(fullReport);
 }
 
 const updateReferenceIssues = async (api: types.IExtensionApi) => {
@@ -405,7 +404,31 @@ function init(context: types.IExtensionContext) {
     hotkey: 'F',
     group: 'hidden',
     props: () => ({
-      onGenerateReportFiles: () => generateAttachment(context.api),
+      onGenerateReportFiles: () => generateReportFiles(context.api),
+      onGenerateAttachment: async () => {
+        context.api.sendNotification({
+          title: 'Generating attachment...',
+          message: 'Please wait...',
+          type: 'activity',
+          id: 'generate-feedback-attachment-notif',
+        })
+        const arcPath = await generateAttachment(context.api);
+        context.api.store.dispatch(setFeedbackArchiveFilePath(arcPath));
+        context.api.sendNotification({
+          title: 'Done',
+          message: 'Attachment generated',
+          type: 'success',
+          id: 'generate-feedback-attachment-notif',
+          actions: [
+            {
+              title: 'Open',
+              action: () => {
+                util.opn(path.dirname(arcPath)).catch(err => null);
+              },
+            },
+          ],
+        });
+      },
       onGenerateHash: async (reportDetails: IReportDetails) => {
         const hash = await generateHash(reportDetails);
         context.api.store!.dispatch(setFeedbackHash(hash));
@@ -437,6 +460,7 @@ function init(context: types.IExtensionContext) {
         setFeedbackTitle(report.title),
         setFeedbackMessage(report.message),
         setFeedbackHash(report.hash),
+        setFeedbackMutable(false),
       ];
       (report.files || []).forEach(filePath => {
         const file: IReportFile = {
