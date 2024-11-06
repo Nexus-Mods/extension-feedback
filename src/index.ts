@@ -453,6 +453,12 @@ function init(context: types.IExtensionContext) {
     context.api.events.emit('show-main-page', 'Feedback'));
 
   context.once(() => {
+    // This is a bit hacky, but it's the only way to ensure that
+    //  the error context includes the extension api without completely
+    //  re-writing the error handling. Either way - this is where
+    //  we hook the api into the globalerror context object.
+    util.setErrorContext('extension-api', context.api);
+
     updateReferenceIssues(context.api);
     context.api.setStylesheet('feedback', path.join(__dirname, 'feedback.scss'));
 
