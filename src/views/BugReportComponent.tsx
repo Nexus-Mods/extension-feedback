@@ -47,15 +47,18 @@ const BugReportComponent = (props: IBugReportProps) => {
   const [stepsToReproduce, setStepsToReproduce] = React.useState(bullet);
   const [externalFileUrl, setExternalFileUrl] = React.useState('');
 
-  const [titleValid, setTitleValid] = React.useState<IInputValidationResult>(validateInput(t, reportTitle, 'title'));
-  const [messageValid, setMessageValid] = React.useState<IInputValidationResult>(validateInput(t, reportMessage, 'content'));
+  const [titleValid, setTitleValid] = React.useState<IInputValidationResult>(validateInput(t, reportTitle, 'none'));
+  const [messageValid, setMessageValid] = React.useState<IInputValidationResult>(validateInput(t, reportMessage, 'none'));
   const [expectedValid, setExpectedValid] = React.useState<IInputValidationResult>(validateInput(t, expectedBehavior, 'content'));
   const [actualValid, setActualValid] = React.useState<IInputValidationResult>(validateInput(t, actualBehavior, 'content'));
   const [stepsValid, setStepsValid] = React.useState<IInputValidationResult>(validateInput(t, stepsToReproduce, 'content'));
   const [urlValid, setUrlValid] = React.useState<IInputValidationResult>(validateInput(t, externalFileUrl, 'url'));
-  
+  const isMutable =  useSelector(state => util.getSafe(state, ['session', 'feedback', 'feedbackMutable'], false));
   const isFormValid = React.useCallback(() => {
-    const result = [titleValid, messageValid, expectedValid, actualValid, stepsValid, urlValid]
+    const relevantValidations = isMutable
+      ? [titleValid, messageValid, expectedValid, actualValid, stepsValid, urlValid]
+      : [titleValid, messageValid, stepsValid, urlValid];
+    const result = relevantValidations
       .reduce((prev, curr) => prev && isValid(curr), true);
     return result;
   }, [titleValid, messageValid, expectedValid, actualValid, stepsValid, urlValid]);
@@ -146,9 +149,10 @@ const BugReportComponent = (props: IBugReportProps) => {
   }, [titleValid, messageValid, expectedValid,
     actualValid, stepsValid, urlValid, t]);
 
-  const fields = [
+  let fields = [
     (
       <TextArea
+        disabled={!isMutable}
         key='feedback-title'
         id='feedback-title'
         label='Title'
@@ -174,32 +178,13 @@ const BugReportComponent = (props: IBugReportProps) => {
       </FlexLayout.Fixed>
     ), (
       <TextArea
+        disabled={!isMutable}
         key='feedback-message'
         id='feedback-message'
         label='Your Message'
         text={message}
         inputType={'message'}
         validationMessage={messageValid}
-        onSetText={onTextChange}
-      />
-    ), (
-      <TextArea
-        key='feedback-expectations'
-        id='feedback-expectations'
-        label='Your Expectations:'
-        text={expectedBehavior}
-        inputType={'expected'}
-        validationMessage={expectedValid}
-        onSetText={onTextChange}
-      />
-    ), (
-      <TextArea
-        key='feedback-result'
-        id='feedback-result'
-        label='What actually happened:'
-        text={actualBehavior}
-        inputType={'actual'}
-        validationMessage={actualValid}
         onSetText={onTextChange}
       />
     ), (
@@ -245,6 +230,32 @@ const BugReportComponent = (props: IBugReportProps) => {
       </FlexLayout.Fixed>
     ),
   ];
+
+  if (isMutable) {
+    fields = fields.concat([
+      (
+        <TextArea
+          key='feedback-expectations'
+          id='feedback-expectations'
+          label='Your Expectations:'
+          text={expectedBehavior}
+          inputType={'expected'}
+          validationMessage={expectedValid}
+          onSetText={onTextChange}
+        />
+      ), (
+        <TextArea
+          key='feedback-result'
+          id='feedback-result'
+          label='What actually happened:'
+          text={actualBehavior}
+          inputType={'actual'}
+          validationMessage={actualValid}
+          onSetText={onTextChange}
+        />
+      ),
+    ]);
+  }
 
   const T: any = Trans;
   const PanelX: any = Panel;

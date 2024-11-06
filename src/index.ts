@@ -352,13 +352,24 @@ function removeFiles(fileNames: string[]): Promise<void> {
 }
 
 const submitReport = async (api: types.IExtensionApi, reportDetails: IReportDetails) => {
-  const bugReportTemplate = await fs.readFileAsync(path.join(__dirname, 'bug_report.md'), { encoding: 'utf-8' });
-  const flattenedReport = reportDetails?.systemInfo ? Object.assign({}, reportDetails, reportDetails.systemInfo) : reportDetails;
-  flattenedReport.additionalContext = `Hash: ${await flattenedReport.hash}`;
-  const report = Object.entries(flattenedReport).reduce((filledReport, [key, value]) => {
-    return filledReport.replace(new RegExp(`{{${key}}}`, 'igm'), value || 'Unspecified');
-  }, bugReportTemplate); 
-  util.opn('https://github.com/Nexus-Mods/Vortex/issues/new?title=' + encodeURIComponent(reportDetails.title) + '&body=' + encodeURIComponent(report));
+  const state = api.getState();
+  let reportBody: string;
+  const isMutable =  util.getSafe(state, ['session', 'feedback', 'feedbackMutable'], false);
+  if (!isMutable) {
+    // If the report is not mutable - we won't apply the bug_report.md template
+    //  but we will add the steps that the user reported alongside the hash
+    reportDetails.additionalContext = '\n\n' + `## Steps To Reproduce:\n\n${reportDetails.steps}\n\n\n\nHash: ${await reportDetails.hash}`;
+    reportBody = reportDetails.errorMessage + reportDetails.additionalContext;
+  } else {
+    const bugReportTemplate = await fs.readFileAsync(path.join(__dirname, 'bug_report.md'), { encoding: 'utf-8' });
+    const flattenedReport = reportDetails?.systemInfo ? Object.assign({}, reportDetails, reportDetails.systemInfo) : reportDetails;
+    flattenedReport.additionalContext = `Hash: ${await flattenedReport.hash}`;
+    reportBody = Object.entries(flattenedReport).reduce((filledReport, [key, value]) => {
+      return filledReport.replace(new RegExp(`{{${key}}}`, 'igm'), value || 'Unspecified');
+    }, bugReportTemplate);
+  }
+
+  util.opn('https://github.com/Nexus-Mods/Vortex/issues/new?title=' + encodeURIComponent(reportDetails.title) + '&body=' + encodeURIComponent(reportBody));
 }
 
 const updateReferenceIssues = async (api: types.IExtensionApi) => {

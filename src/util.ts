@@ -103,6 +103,9 @@ const obscenityMatcher = new RegExpMatcher({
 });
 
 export const validateInput = (t: any, input: string, constraint: ReportInputConstraintType): IInputValidationResult | undefined => {
+  if (constraint === 'none') {
+    return undefined;
+  }
   const constraints: IInputConstraint | undefined = generateConstraints(constraint);
   if (!!constraints && ((input.length > constraints.maxLength) || (input.length < constraints.minLength))) {
     return {

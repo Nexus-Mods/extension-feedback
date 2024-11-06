@@ -158,6 +158,12 @@
   position: absolute;
   top: 0;
   bottom: 0;
+  > .disabled {
+    cursor: not-allowed;
+    background-color: $gray-lighter;
+    color: $gray-light;
+    border-color: $gray-lighter;
+  }
 }
 
 #textarea-feedback-attachments-url {

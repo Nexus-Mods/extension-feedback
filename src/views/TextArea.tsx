@@ -40,15 +40,15 @@ const TextArea = (props: ITextAreaProps) => {
   const size = ['title', 'url'].includes(props.inputType) ? '14%' : '30%';
   const placeHolder = getPlaceholder(props.inputType);
   const noop = React.useCallback(() => null, []);
-  const isMutable =  useSelector(state => util.getSafe(state, ['session', 'feedback', 'feedbackMutable'], false));
   const func = ['title', 'message'].includes(props.inputType) 
-    ? isMutable
+    ? (!props.disabled)
       ? props.onSetText
       : noop
     : props.onSetText;
 
   return (
     <div 
+      className={`${props.id}-container` + (props.disabled ? ' disabled' : '')}
       key={`${props.id}-container`}
       style={{
         display: 'flex',
