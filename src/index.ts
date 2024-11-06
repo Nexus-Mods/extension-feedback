@@ -21,6 +21,7 @@ import * as path from 'path';
 import * as tmp from 'tmp';
 import { fs, log, types, util } from 'vortex-api';
 import * as winapiT from 'winapi-bindings';
+import { sendReport } from 'vortex-api/lib/util/errorHandling';
 
 const WHITESCREEN_THREAD =
   'https://forums.nexusmods.com/index.php?/topic/7151166-whitescreen-reasons/';
@@ -352,11 +353,12 @@ function removeFiles(fileNames: string[]): Promise<void> {
 
 const submitReport = async (api: types.IExtensionApi, reportDetails: IReportDetails) => {
   const bugReportTemplate = await fs.readFileAsync(path.join(__dirname, 'bug_report.md'), { encoding: 'utf-8' });
-  for (const [key, value] of Object.entries(reportDetails)) {
-    bugReportTemplate.replace(new RegExp(`{{${key}}}`, 'igm'), encodeURIComponent(value));
-  }
-  util.opn('https://github.com/Nexus-Mods/Vortex-Backend/issues/new?body=' + encodeURIComponent(bugReportTemplate));
-  // const title = Object.values(bugReportTemplate).find()
+  const flattenedReport = reportDetails?.systemInfo ? Object.assign({}, reportDetails, reportDetails.systemInfo) : reportDetails;
+  flattenedReport.additionalContext = `Hash: ${await flattenedReport.hash}`;
+  const report = Object.entries(flattenedReport).reduce((filledReport, [key, value]) => {
+    return filledReport.replace(new RegExp(`{{${key}}}`, 'igm'), value || 'Unspecified');
+  }, bugReportTemplate); 
+  util.opn('https://github.com/Nexus-Mods/Vortex/issues/new?title=' + encodeURIComponent(reportDetails.title) + '&body=' + encodeURIComponent(report));
 }
 
 const updateReferenceIssues = async (api: types.IExtensionApi) => {

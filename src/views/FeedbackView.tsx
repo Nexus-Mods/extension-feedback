@@ -66,9 +66,9 @@ const ReportPage = (props: IReportPageProps) => {
     setFilteredIssues(issues);
     return Promise.resolve();
   }, 1000));
-
-  const onSubmitReport = React.useCallback(() => {
-    onSendReport(reportDetails);
+  
+  const onSubmitReport = React.useCallback((report: IReportDetails) => {
+    onSendReport(report);
   }, [reportDetails]);
 
   const onRefreshHash = React.useCallback(async () => {

@@ -18,7 +18,7 @@ export interface IBugReportProps {
   onOpenUrl: (evt: any) => void;
   onRefreshHash: () => void;
   onSetReport: (report: IReportDetails) => void;
-  onSumbitReport: () => void;
+  onSumbitReport: (report: IReportDetails) => void;
   onGenerateAttachment: () => Promise<string>;
   reportTitle: string;
   reportHash: string,
@@ -45,14 +45,14 @@ const BugReportComponent = (props: IBugReportProps) => {
   const [expectedBehavior, setExpectedBehavior] = React.useState('');
   const [actualBehavior, setActualBehavior] = React.useState('');
   const [stepsToReproduce, setStepsToReproduce] = React.useState(bullet);
-  const [attachmentUrl, setAttachmentUrl] = React.useState('');
+  const [externalFileUrl, setExternalFileUrl] = React.useState('');
 
   const [titleValid, setTitleValid] = React.useState<IInputValidationResult>(validateInput(t, reportTitle, 'title'));
   const [messageValid, setMessageValid] = React.useState<IInputValidationResult>(validateInput(t, reportMessage, 'content'));
   const [expectedValid, setExpectedValid] = React.useState<IInputValidationResult>(validateInput(t, expectedBehavior, 'content'));
   const [actualValid, setActualValid] = React.useState<IInputValidationResult>(validateInput(t, actualBehavior, 'content'));
   const [stepsValid, setStepsValid] = React.useState<IInputValidationResult>(validateInput(t, stepsToReproduce, 'content'));
-  const [urlValid, setUrlValid] = React.useState<IInputValidationResult>(validateInput(t, attachmentUrl, 'url'));
+  const [urlValid, setUrlValid] = React.useState<IInputValidationResult>(validateInput(t, externalFileUrl, 'url'));
   
   const isFormValid = React.useCallback(() => {
     const result = [titleValid, messageValid, expectedValid, actualValid, stepsValid, urlValid]
@@ -79,11 +79,11 @@ const BugReportComponent = (props: IBugReportProps) => {
       systemInfo: systemInfo(),
       gameMode: gameMode,
       extensionVersion: game?.version ?? '0.0.0',
-      externalFileUrl: attachmentUrl,
+      externalFileUrl,
       hash: reportHash,
-      attachmentUrl: util.getSafe(store.getState(), ['session', 'feedback', 'feedbackArchiveFilePath'], undefined),
+      attachmentFilepath: util.getSafe(store.getState(), ['session', 'feedback', 'feedbackArchiveFilePath'], undefined),
       reportedBy: util.getSafe(store.getState(), ['confidential', 'account', 'nexus', 'userInfo', 'name'], 'unknown'),
-      dateReported: new Date().toLocaleDateString('en-US'),
+      dateReported: new Date().toLocaleString(),
     }
   };
 
@@ -91,8 +91,9 @@ const BugReportComponent = (props: IBugReportProps) => {
     if (!isFormValid()) {
       return;
     }
-    onSetReport(genReportDetails());
-    onSumbitReport();
+    const report = genReportDetails();
+    onSetReport(report);
+    onSumbitReport(report);
   }, [onSetReport, onSumbitReport]);
 
   const removeFile = React.useCallback((evt: any) => {
@@ -111,7 +112,7 @@ const BugReportComponent = (props: IBugReportProps) => {
   React.useEffect(() => {
     debounce.schedule();
   }, [debounce, title, message, actualBehavior,
-    expectedBehavior, stepsToReproduce, attachmentUrl,
+    expectedBehavior, stepsToReproduce, externalFileUrl,
   ]);
 
   const onTextChange = React.useCallback((evt: ITextChangeData) => {
@@ -138,7 +139,7 @@ const BugReportComponent = (props: IBugReportProps) => {
         setStepsValid(validateInput(t, value, 'content'));
         break;
       case 'url':
-        setAttachmentUrl(value);
+        setExternalFileUrl(value);
         setUrlValid(validateInput(t, value, 'url'));
         break;
     }
@@ -218,7 +219,7 @@ const BugReportComponent = (props: IBugReportProps) => {
         key='feedback-attachment-url'
         id='feedback-attachment-url'
         label='Attachment:'
-        text={attachmentUrl}
+        text={externalFileUrl}
         inputType={'url'}
         validationMessage={urlValid}
         onSetText={onTextChange}

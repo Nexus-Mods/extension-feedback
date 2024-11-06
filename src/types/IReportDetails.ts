@@ -20,9 +20,10 @@ export interface IReportDetails {
   expectedBehavior?: string;
   actualBehavior?: string;
   attachments?: IReportFile[];
-  attachmentUrl?: string;
+  attachmentFilepath?: string;
   errorContext?: { [ key: string ]: any };
   hash?: string | Promise<string>;
   dateReported?: string;
   reportedBy?: string;
+  additionalContext?: string;
 }
