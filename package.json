@@ -27,7 +27,7 @@
     "redux": "^4.0.0",
     "tmp": "^0.0.31",
     "ts-loader": "^9.2.6",
-    "vortex-api": "Nexus-Mods/vortex-api",
+    "vortex-api": "Nexus-Mods/vortex-api#api_update_1.8.12",
     "webpack": "^5.66.0",
     "webpack-cli": "^4.9.1"
   },

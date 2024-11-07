@@ -1460,9 +1460,9 @@ util-deprecate@~1.0.1:
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
   integrity sha1-RQ1Nyfpw3nMnYvvS1KKJgUGaDM8=
 
-vortex-api@Nexus-Mods/vortex-api:
-  version "1.8.11"
-  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/920862d472183b37a2b64fcd1bdbceadbf07c4e9"
+vortex-api@Nexus-Mods/vortex-api#api_update_1.8.12:
+  version "1.8.12"
+  resolved "https://codeload.github.com/Nexus-Mods/vortex-api/tar.gz/8f0395ee141126e975a7a7cdbe99673625bdc434"
 
 warning@^3.0.0:
   version "3.0.0"
