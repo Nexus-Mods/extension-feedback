@@ -47,7 +47,7 @@ const ReportPage = (props: IReportPageProps) => {
   const [currentHash, setHash] = useState(reportHash);
   const [currentFilteredIssues, setFilteredIssues] = useState([]);
   const [reportDetails, setReportDetails] = React.useState<IReportDetails>(null);
-  const [debounce,] = React.useState(new util.Debouncer(async (updatedHash: string) => {
+  const [debounce,] = React.useState(new util.Debouncer(async (updatedHash: string, debReportDetails: IReportDetails) => {
     if (!updatedHash || (updatedHash !== currentHash)) {
       if (updatedHash) {
         setHash(updatedHash);
@@ -58,11 +58,11 @@ const ReportPage = (props: IReportPageProps) => {
         setReportDetails(tempReport);
       }
     } else {
-      const rep = { ...reportDetails };
+      const rep = { ...debReportDetails };
       rep.hash = await generateHash(rep);
       setReportDetails(rep);
     }
-    const issues = await onFindRelatedIssues(reportDetails);
+    const issues = await onFindRelatedIssues(debReportDetails);
     setFilteredIssues(issues);
     return Promise.resolve();
   }, 1000));
@@ -77,13 +77,13 @@ const ReportPage = (props: IReportPageProps) => {
     }
     const hash = await generateHash(reportDetails);
     if (hash !== reportHash) {
-      debounce.schedule(undefined, hash);
+      debounce.schedule(undefined, hash, reportDetails);
     }
   }, [reportDetails, reportHash, debounce]);
 
   const store = useStore();
   useEffect(() => {
-    debounce.schedule(undefined, reportHash);
+    debounce.schedule(undefined, reportHash, reportDetails);
   }, [reportDetails, reportHash, reportTitle, reportMessage, debounce]);
 
   const openLink = React.useCallback((evt: React.MouseEvent) => {

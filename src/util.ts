@@ -202,11 +202,7 @@ const generateConstraints = (constraint: ReportInputConstraintType): IInputConst
 
 export const generateHash = async (report: IReportDetails): Promise<string> => {
   // Important note: don't forget to assign the hash!
-  const err: Error = new Error();
-  err.message = report.errorMessage;
-  err.stack = report.errorMessage ?? err.stack;
-  err.name = report.title;
-  return util.genHash(err);
+  return util.genHash(report.errorMessage);
 }
 
 const extractErrorDetails = (report: string) => {

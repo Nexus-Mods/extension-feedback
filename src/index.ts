@@ -237,36 +237,42 @@ function nativeCrashCheck(api: types.IExtensionApi): Promise<void> {
     });
 }
 
-async function downloadGithubFile(repoOwner: string, repoName: string, filePath: string, outputPath: string) {
+async function downloadGithubFile(repoOwner, repoName, filePath, outputPath) {
   //const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/${filePath}`;
   const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/update-issue-tracker/${filePath}`;
-
   try {
-    const response = await axios.get(url, {
-      responseType: 'stream'
+    const response = await axios({
+      method: 'get',
+      url,
+      responseType: 'arraybuffer',
+      headers: {
+        "Accept-Encoding": "gzip, deflate",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+      },
     });
-    const writer = fs.createWriteStream(path.resolve(outputPath));
-
-    response.data.pipe(writer);
-
-    return new Promise((resolve, reject) => {
-      writer.on('finish', resolve);
-      writer.on('error', reject);
-    });
-  } catch (error) {
-    console.error(`Error downloading file: ${error.message}`);
+    await fs.writeFileAsync(outputPath, Buffer.from(response.data));
+  } catch (err) {
+    log('warn', 'Failed to download feedback reference issues', err.message);
   }
 }
 
-const readReferenceIssues = memoize(async (): Promise<IGithubIssue[]> => {
-  const data = await fs.readFileAsync(path.join(util.getVortexPath('temp'), 'issues_report.json'), { encoding: 'utf-8' });
+let _managedToParse = false;
+const readReferenceIssues = async () => _managedToParse
+  ? readReferenceIssuesMemoized()
+  : readReferenceIssuesUnMemo();
+
+const readReferenceIssuesUnMemo = async (): Promise<IGithubIssue[]> => {
   try {
-    return JSON.parse(data);
+    const data = await fs.readFileAsync(path.join(util.getVortexPath('temp'), 'issues_report.json'), { encoding: 'utf-8' });
+    const parsed = JSON.parse(data);
+    _managedToParse = true;
+    return parsed;
   } catch (err) {
     log('warn', 'Failed to parse feedback reference issues', err.message);
     return [];
   }
-})
+}
+const readReferenceIssuesMemoized = memoize(readReferenceIssuesUnMemo);
 
 async function identifyAttachment(filePath: string, type?: string): Promise<IReportFile> {
   return fs.statAsync(filePath)
@@ -354,7 +360,7 @@ function removeFiles(fileNames: string[]): Promise<void> {
 const submitReport = async (api: types.IExtensionApi, reportDetails: IReportDetails) => {
   const state = api.getState();
   let reportBody: string;
-  const isMutable =  util.getSafe(state, ['session', 'feedback', 'feedbackMutable'], false);
+  const isMutable = util.getSafe(state, ['session', 'feedback', 'feedbackMutable'], false);
   if (!isMutable) {
     // If the report is not mutable - we won't apply the bug_report.md template
     //  but we will add the steps that the user reported alongside the hash
@@ -375,6 +381,7 @@ const submitReport = async (api: types.IExtensionApi, reportDetails: IReportDeta
 const updateReferenceIssues = async (api: types.IExtensionApi) => {
   const issuesFilePath = path.join(util.getVortexPath('temp'), 'issues_report.json');
   try {
+    await fs.removeAsync(issuesFilePath).catch(err => null);
     await downloadGithubFile('Nexus-Mods', 'Vortex-Backend', 'out/issues_report.json', issuesFilePath);
     await readReferenceIssues();
     await generateReportFiles(api);
@@ -384,12 +391,16 @@ const updateReferenceIssues = async (api: types.IExtensionApi) => {
 }
 
 const findRelatedIssues = async (report: IReportDetails): Promise<IGithubIssue[]> => {
+  if (!report) {
+    // Can happen if the bug report is not generated yet
+    return [];
+  }
   try {
     const issues: IGithubIssue[] = await readReferenceIssues();
     return issues.filter(issue =>
       issue?.hash === report.hash
-        || partial_ratio(issue.title, report.title) > 90
-        || partial_ratio(issue.body, report.errorMessage) > 90);
+      || partial_ratio(issue.title, report.title) > 90
+      || partial_ratio(issue.body, report.errorMessage) > 90);
   } catch (err) {
     log('warn', 'Failed to parse feedback reference issues', err.message);
     return [];
@@ -475,20 +486,22 @@ function init(context: types.IExtensionContext) {
 
     context.api.events.on('report-feedback', (report: types.IFeedbackReport) => {
       context.api.events.emit('show-main-page', 'Feedback');
+      const reportFiles = (report.files || []).map(filePath => {
+        return {
+          filename: path.basename(filePath),
+          filePath,
+          size: fs.statSync(filePath).size,
+          type: 'attachment',
+        }
+      });
       const batched = [
         setFeedbackTitle(report.title),
         setFeedbackMessage(report.message),
         setFeedbackHash(report.hash),
         setFeedbackMutable(false),
       ];
-      (report.files || []).forEach(filePath => {
-        const file: IReportFile = {
-          filename: path.basename(filePath),
-          filePath,
-          size: fs.statSync(filePath).size,
-          type: 'attachment',
-        }
-        batched.push(addFeedbackFile(file) as any);
+      reportFiles.forEach((report: IReportFile) => {
+        batched.push(addFeedbackFile(report) as any);
       });
       util.batchDispatch(context.api!.store!.dispatch, batched);
     });

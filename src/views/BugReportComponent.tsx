@@ -273,7 +273,6 @@ const BugReportComponent = (props: IBugReportProps) => {
 }
 
 const ReferencedIssue = (issue: IGithubIssue, onOpen: (evt: any) => void) => {
-  const [t] = useTranslation('common');
   return (
     <ListGroupItem key={issue.id}>
       <p style={{ display: 'inline' }}>
