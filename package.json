@@ -1,18 +1,23 @@
 {
   "name": "feedback",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Feedback page",
   "main": "./out/index.js",
   "scripts": {
     "webpack": "node ./node_modules/webpack/bin/webpack --config webpack.config.js --progress --profile --color",
-    "build": "npm run webpack && extractInfo && copyfiles -f src/stylesheets/feedback.scss dist && copyfiles -f issues.json dist"
+    "build": "npm run webpack && extractInfo && copyfiles -f src/stylesheets/feedback.scss dist && copyfiles -f issues.json dist && copyfiles -f ../../.github/ISSUE_TEMPLATE/bug_report.md dist"
   },
   "author": "Black Tree Gaming Ltd.",
   "license": "GPL-3.0",
   "devDependencies": {
-    "@types/react": "16.0.34",
-    "@types/react-bootstrap": "^0.0.37",
-    "@types/react-redux": "^7.1.22",
+    "@types/react": "^16.9.43",
+    "@types/react-bootstrap": "^0.32.20",
+    "@types/react-dom": "^16.9.4",
+    "@types/react-redux": "^7.1.9",
+    "@types/react-select": "^1.2.0",
+    "@types/react-sortable-tree": "^0.3.11",
+    "@types/react-test-renderer": "^16.9.1",
+    "@types/react-transition-group": "^4.2.3",
     "@types/redux": "3.6.0",
     "@types/redux-thunk": "2.1.0",
     "@types/tmp": "^0.0.33",
@@ -22,8 +27,12 @@
     "redux": "^4.0.0",
     "tmp": "^0.0.31",
     "ts-loader": "^9.2.6",
-    "vortex-api": "Nexus-Mods/vortex-api",
+    "vortex-api": "Nexus-Mods/vortex-api#api_update_1.8.12",
     "webpack": "^5.66.0",
     "webpack-cli": "^4.9.1"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "obscenity": "^0.4.0"
   }
 }
