@@ -11,6 +11,8 @@ import * as tmp from 'tmp';
 import { fs, log, types, util } from 'vortex-api';
 import * as winapiT from 'winapi-bindings';
 
+const VORTEX_ISSUE_TRACKER = 'https://github.com/Nexus-Mods/Vortex/issues';
+
 const WHITESCREEN_THREAD =
   'https://forums.nexusmods.com/index.php?/topic/7151166-whitescreen-reasons/';
 
@@ -318,38 +320,46 @@ function init(context: types.IExtensionContext) {
   });
 
   context.registerAction('global-icons', 100, 'feedback', {}, 'Send Feedback', () =>
-    context.api.events.emit('show-main-page', 'Feedback'));
+    util.opn(VORTEX_ISSUE_TRACKER).catch(() => null) as any);
 
   context.once(() => {
     context.api.setStylesheet('feedback', path.join(__dirname, 'feedback.scss'));
 
     context.api.events.on('report-feedback', (title: string, text: string, files: IFeedbackFile[],
                                               hash?: string) => {
-      context.api.events.emit('show-main-page', 'Feedback');
-      context.api.store.dispatch(setFeedbackType('bugreport', 'other'));
-      context.api.store.dispatch(setFeedbackTitle(title));
-      context.api.store.dispatch(setFeedbackMessage(text));
-      context.api.store.dispatch(setFeedbackHash(hash));
-      (files || []).forEach(file => {
-        context.api.store.dispatch(addFeedbackFile(file));
+      context.api.sendNotification({
+        id: 'report-feedback',
+        type: 'info',
+        message: 'Please report this on our issue tracker',
+        actions: [
+          {
+            title: 'View Logs/Open issue tracker',
+            action: () => {
+              util.opn(VORTEX_ISSUE_TRACKER).catch(() => null);
+              (files || []).forEach(file => {
+                util.opn(file.filePath).catch(() => null);
+              });
+            }
+          }
+        ]
       });
     });
 
     context.api.events.on('report-log-error', (logSessionPath: string) => {
-      fs.statAsync(logSessionPath)
-        .then((stats) => {
-          const feedbackFile: IFeedbackFile = {
-            filename: path.basename(logSessionPath),
-            filePath: logSessionPath,
-            size: stats.size,
-            type: 'log',
-          };
-          context.api.store.dispatch(addFeedbackFile(feedbackFile));
-        })
-        .catch(err => {
-          context.api.showErrorNotification('Failed to attach session log', err);
-        });
-      context.api.events.emit('show-main-page', 'Feedback');
+      context.api.sendNotification({
+        id: 'report-log-error',
+        type: 'info',
+        message: 'Please report this on our issue tracker',
+        actions: [
+          {
+            title: 'View Log/Open issue tracker',
+            action: () => {
+              util.opn(VORTEX_ISSUE_TRACKER).catch(() => null);
+              util.opn(logSessionPath).catch(() => null);
+            }
+          }
+        ]
+      });
     });
 
     nativeCrashCheck(context.api);
