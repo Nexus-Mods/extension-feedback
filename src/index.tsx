@@ -11,6 +11,8 @@ import * as tmp from 'tmp';
 import { fs, log, types, util } from 'vortex-api';
 import * as winapiT from 'winapi-bindings';
 
+const FEEDBACK_GOOGLE_FORM = 'https://forms.gle/YF9ED2Xe4ef9jKf99';
+
 const VORTEX_ISSUE_TRACKER = 'https://github.com/Nexus-Mods/Vortex/issues';
 
 const WHITESCREEN_THREAD =
@@ -320,7 +322,11 @@ function init(context: types.IExtensionContext) {
   });
 
   context.registerAction('global-icons', 100, 'feedback', {}, 'Send Feedback', () =>
+    util.opn(FEEDBACK_GOOGLE_FORM).catch(() => null) as any);
+
+  context.registerAction('global-icons', 100, 'bug', {}, 'Report Bug', () =>
     util.opn(VORTEX_ISSUE_TRACKER).catch(() => null) as any);
+
 
   context.once(() => {
     context.api.setStylesheet('feedback', path.join(__dirname, 'feedback.scss'));
